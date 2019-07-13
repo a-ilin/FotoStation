@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>widgets/FSTextField.qml</file>
+        <file>widgets/qmldir</file>
+        <file>screens/LoginView.qml</file>
+        <file>screens/Footer.qml</file>
+        <file>assets/Assets.qml</file>
+        <file>assets/qmldir</file>
+        <file>assets/roller_16.gif</file>
+        <file>assets/roller_32.gif</file>
+        <file>assets/roller_64.gif</file>
+    </qresource>
+</RCC>
