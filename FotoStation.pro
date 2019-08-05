@@ -24,12 +24,16 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+  src/synoalbum.h \
   src/synoconn.h \
+  src/synoerror.h \
   src/synops.h
 
 SOURCES += \
         src/main.cpp \
+        src/synoalbum.cpp \
         src/synoconn.cpp \
+        src/synoerror.cpp \
         src/synops.cpp
 
 CONFIG(release, debug|release): {

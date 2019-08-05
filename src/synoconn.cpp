@@ -22,13 +22,15 @@
  */
 
 #include "synoconn.h"
+#include "synoerror.h"
+
 
 SynoConn::SynoConn(QObject *parent)
     : QObject(parent)
     , m_status(SynoConn::DISCONNECTED)
     , m_isConnecting(false)
 {
-    m_apiPath = "webapi";
+    m_apiPath = QByteArrayLiteral("webapi");
 }
 
 void SynoConn::connectToSyno(const QUrl& synoUrl)
@@ -36,7 +38,7 @@ void SynoConn::connectToSyno(const QUrl& synoUrl)
     disconnectFromSyno();
     setIsConnecting(true);
     m_synoUrl = synoUrl;
-    if (synoUrl.scheme() == "https") {
+    if (synoUrl.scheme() == QStringLiteral("https")) {
         m_networkManager.connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
     } else {
         m_networkManager.connectToHost(synoUrl.host(), static_cast<quint16>(synoUrl.port(80)));
@@ -56,31 +58,52 @@ void SynoConn::disconnectFromSyno()
     m_networkManager.clearAccessCache();
     setStatus(SynoConn::DISCONNECTED);
     setIsConnecting(false);
+    m_synoToken.clear();
 }
 
 void SynoConn::authorize(const QString& username, const QString& password)
 {
     QByteArrayList formData;
-    formData << "method=login";
-    formData << "version=1";
-    formData << "enable_syno_token=true";
-    formData << "username=" + username.toUtf8();
-    formData << "password=" + password.toUtf8();
+    formData << QByteArrayLiteral("method=login");
+    formData << QByteArrayLiteral("version=1");
+    formData << QByteArrayLiteral("enable_syno_token=true");
+    formData << QByteArrayLiteral("username=") + username.toUtf8();
+    formData << QByteArrayLiteral("password=") + password.toUtf8();
+    formData << QByteArrayLiteral("remember_me=true");
 
-    sendRequest("SYNO.PhotoStation.Auth", formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
+    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
         QJsonValue jsonSuccess = json.object()["success"];
         bool authSuccess = jsonSuccess.toBool();
         if (authSuccess) {
-            qWarning() << "Authorization successful!";
+            qWarning() << QStringLiteral("Authorization successful!");
+            m_synoToken = json.object()["data"].toObject()["sid"].toString().toUtf8();
             setStatus(SynoConn::AUTHORIZED);
         } else {
-            qWarning() << "Authorization failed!";
+            qWarning() << QStringLiteral("Authorization failed!");
         }
         setIsConnecting(false);
     }, [=](QNetworkReply* /*reply*/, const QJsonDocument& /*json*/) {
-            qWarning() << "Authorization failed!";
+            qWarning() << QStringLiteral("Authorization failed!");
             setIsConnecting(false);
-        });
+    });
+}
+
+void SynoConn::checkAuth()
+{
+    QByteArrayList formData;
+    formData << QByteArrayLiteral("method=checkauth");
+    formData << QByteArrayLiteral("version=1");
+
+    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
+        QJsonValue jsonSuccess = json.object()["success"];
+        bool authSuccess = jsonSuccess.toBool();
+        if (!authSuccess) {
+            qWarning() << QStringLiteral("Check auth failed!");
+        }
+        setIsConnecting(false);
+    }, [=](QNetworkReply* /*reply*/, const QJsonDocument& /*json*/) {
+        qWarning() << QStringLiteral("Check auth failed!");
+    });
 }
 
 SynoConn::SynoConnStatus SynoConn::status() const
@@ -94,16 +117,19 @@ bool SynoConn::isConnecting() const
 }
 
 void SynoConn::sendRequest(const QByteArray& api,
-                         const QByteArrayList& formData,
-                         std::function<RequestCallback> callbackSuccess,
-                         std::function<RequestCallback> callbackFailure)
+                           const QByteArrayList& formData,
+                           std::function<RequestCallback> callbackSuccess,
+                           std::function<RequestCallback> callbackFailure)
 {
     if (!m_apiMap.contains(api)) {
-        qWarning() << __FUNCTION__ << ": Cannot send request: Unknown API: " + api;
+        qWarning() << QStringLiteral(__FUNCTION__) << QStringLiteral(": Cannot send request: Unknown API: ") + api;
         return;
     }
 
+    QNetworkRequest req;
+
     QUrl url(m_synoUrl);
+    QUrlQuery urlQuery;
 
     QStringList path;
     path << url.path()
@@ -111,13 +137,26 @@ void SynoConn::sendRequest(const QByteArray& api,
          << QString::fromLatin1(m_apiMap[api]);
     url.setPath(path.join('/'));
 
-    QNetworkRequest req;
+    if (!m_synoToken.isEmpty()) {
+        req.setRawHeader(QByteArrayLiteral("X-SYNO-TOKEN"), m_synoToken);
+        urlQuery.addQueryItem(QByteArrayLiteral("SynoToken"), m_synoToken);
+    }
+
+    url.setQuery(urlQuery);
     req.setUrl(url);
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    req.setHeader(QNetworkRequest::ContentTypeHeader, QByteArrayLiteral("application/x-www-form-urlencoded"));
 
     QByteArray body;
     body.reserve(4096);
-    body += "api=" + api + '&' + formData.join('&');
+    body += QByteArrayLiteral("api=") + api;
+
+    if (!m_synoToken.isEmpty()) {
+        body += QByteArrayLiteral("&SynoToken=") + m_synoToken;
+    }
+
+    if (!formData.isEmpty()) {
+        body += '&' + formData.join('&');
+    }
 
     QNetworkReply* reply = m_networkManager.post(req, body);
     m_pendingReplies.insert(reply);
@@ -127,7 +166,7 @@ void SynoConn::sendRequest(const QByteArray& api,
             if (QNetworkReply::NoError != reply->error()) {
                 errorString = reply->errorString();
             } else {
-                errorString = "Unknown error";
+                errorString = QStringLiteral("Unknown error");
             }
         }
 
@@ -145,16 +184,28 @@ void SynoConn::sendRequest(const QByteArray& api,
         if (errorString.isEmpty()) {
             QJsonValue jsonError = json.object()["error"];
             if (!jsonError.isUndefined() && !jsonError.isNull()) {
-                int errorCode = jsonError.toObject()["code"].toInt();
-                errorString = QStringLiteral("SYNO error: ") + QString::number(errorCode);
+                QJsonObject jsonErrorObject = jsonError.toObject();
+                auto errorCodeIter = jsonErrorObject.find("code");
+                if (errorCodeIter != jsonErrorObject.end()) {
+                    int errorCode = errorCodeIter.value().toInt(-1);
+
+                    if (const char* errorCodeEnum = SynoErrorGadget::metaEnum().valueToKey(errorCode)) {
+                        errorString = QStringLiteral("SYNO error: %1 (%2)").arg(errorCodeEnum).arg(errorCode);
+                    } else {
+                        errorString = QStringLiteral("SYNO error: UNKNOWN (%1)").arg(errorCode);
+                    }
+                } else {
+                    errorString = QStringLiteral("SYNO error: UNKNOWN");
+                }
             }
         }
 
+        //qDebug() << "Headers: " << reply->rawHeaderPairs();
         qDebug() << "Body: " << replyBody;
 
         if (!errorString.isEmpty()) {
-            qWarning() << "HTTP request " << reply->request().url()
-                       << " failed: " << errorString;
+            qWarning() << QStringLiteral("HTTP request ") << reply->request().url()
+                       << QStringLiteral(" failed: ") << errorString;
         }
 
         if (errorString.isEmpty()) {
@@ -176,26 +227,26 @@ void SynoConn::sendRequest(const QByteArray& api,
 void SynoConn::populateApiMap()
 {
     m_apiMap.clear();
-    m_apiMap["SYNO.API.Info"] = "query.php";
+    m_apiMap[QByteArrayLiteral("SYNO.API.Info")] = QByteArrayLiteral("query.php");
 
     QByteArrayList formData;
-    formData << "query=all";
-    formData << "method=query";
-    formData << "version=1";
-    formData << "ps_username=";
+    formData << QByteArrayLiteral("query=all");
+    formData << QByteArrayLiteral("method=query");
+    formData << QByteArrayLiteral("version=1");
+    formData << QByteArrayLiteral("ps_username=");
 
-    sendRequest("SYNO.API.Info", formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
+    sendRequest(QByteArrayLiteral("SYNO.API.Info"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
         QJsonValue jsonData = json.object()["data"];
         QJsonObject jsonDataObj = jsonData.toObject();
         if (jsonData.isUndefined() || !jsonDataObj.size()) {
-            qWarning() << "Received empty API map!";
+            qWarning() << QStringLiteral("Received empty API map!");
             setStatus(SynoConn::DISCONNECTED);
             setIsConnecting(false);
         } else {
             for (auto iter = jsonDataObj.constBegin(); iter != jsonDataObj.constEnd(); ++iter) {
                 QString path = iter.value().toObject()["path"].toString();
                 if (path.isEmpty()) {
-                    qWarning() << "Received empty path for API: " << iter.key();
+                    qWarning() << QStringLiteral("Received empty path for API: ") << iter.key();
                 } else {
                     m_apiMap[iter.key().toUtf8()] = path.toUtf8();
                 }

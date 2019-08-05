@@ -26,6 +26,7 @@
 #include <QtCore/private/qobject_p.h>
 #include <QtQml>
 
+#include "synoalbum.h"
 #include "synoconn.h"
 
 class SynoPSPrivate : public QObjectPrivate
@@ -44,6 +45,11 @@ SynoPS::SynoPS(QObject *parent)
 {
 }
 
+SynoAlbum* SynoPS::getRootAlbum()
+{
+    return new SynoAlbum(conn(), this);
+}
+
 SynoConn* SynoPS::conn()
 {
     Q_D(SynoPS);
@@ -55,6 +61,7 @@ void SynoPS::registerQmlTypes()
     const char* qmlUrl = "FotoStation";
 
     qmlRegisterType<SynoPS>(qmlUrl, 1, 0, "SynoPS");
+    qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
     qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
 }
 

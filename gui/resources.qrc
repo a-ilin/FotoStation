@@ -10,5 +10,6 @@
         <file>assets/roller_16.gif</file>
         <file>assets/roller_32.gif</file>
         <file>assets/roller_64.gif</file>
+        <file>screens/AlbumView.qml</file>
     </qresource>
 </RCC>

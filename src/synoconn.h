@@ -34,6 +34,7 @@
 #include <QNetworkReply>
 #include <QObject>
 #include <QUrl>
+#include <QUrlQuery>
 
 
 class SynoConn : public QObject
@@ -71,6 +72,8 @@ public:
 
     Q_INVOKABLE void authorize(const QString& username, const QString& password);
 
+    Q_INVOKABLE void checkAuth();
+
 signals:
     void statusChanged();
     void isConnectingChanged();
@@ -94,6 +97,8 @@ private:
     /*! Connection status */
     SynoConnStatus m_status;
     bool m_isConnecting;
+    /*! Session token */
+    QByteArray m_synoToken;
 };
 
 #endif // SYNOCONN_H

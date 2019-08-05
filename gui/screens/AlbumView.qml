@@ -21,38 +21,24 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
+import QtQuick 2.13
 
-#include <functional>
+import FotoStation 1.0
 
-#include <QObject>
+Item {
+    id: root
 
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
+    /*! This property holds instance of SynoPS */
+    property var synoPS: null
 
-class SynoPS : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
+    /*! This property holds instance of SynoAlbum */
+    property var synoAlbum: null
 
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
+    Component.onCompleted: {
+        if (!root.synoAlbum) {
+            root.synoAlbum = synoPS.getRootAlbum();
+        }
 
-public:
-    explicit SynoPS(QObject *parent = nullptr);
-
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
-
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
-};
-
-#endif // SYNOPS_H
+        root.synoAlbum.list();
+    }
+}

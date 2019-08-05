@@ -78,14 +78,34 @@ ApplicationWindow {
         id: _syno
     }
 
+    Connections {
+        target: _syno.conn
+        onStatusChanged: {
+            if (_syno.conn.status === SynoConn.AUTHORIZED) {
+                internal.showAlbumViewForm();
+            } else if (_syno.conn.status === SynoConn.DISCONNECTED) {
+                internal.showAuthorizationForm();
+            }
+        }
+    }
+
     QtObject {
         id: internal
 
+        readonly property url albumViewUrl: Qt.resolvedUrl("screens/AlbumView.qml")
         readonly property url footerUrl: Qt.resolvedUrl("screens/Footer.qml")
         readonly property url loginViewUrl: Qt.resolvedUrl("screens/LoginView.qml")
+
+        function showAuthorizationForm() {
+            _loader.setSource(internal.loginViewUrl, { synoPS: _syno });
+        }
+
+        function showAlbumViewForm() {
+            _loader.setSource(internal.albumViewUrl, { synoPS: _syno });
+        }
     }
 
     Component.onCompleted: {
-        _loader.setSource(internal.loginViewUrl, { synoPS: _syno });
+        internal.showAuthorizationForm();
     }
 }

@@ -21,38 +21,56 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
-
-#include <functional>
+#ifndef SYNOALBUM_H
+#define SYNOALBUM_H
 
 #include <QObject>
 
-class SynoAlbum;
 class SynoConn;
-class SynoPSPrivate;
 
-class SynoPS : public QObject
+// TODO: Inherit from QAbstractItemModel
+class SynoAlbum : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
 
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
+    Q_PROPERTY (QString path READ path WRITE setPath NOTIFY pathChanged)
+    Q_PROPERTY (int offset READ offset WRITE setOffset NOTIFY offsetChanged)
+    Q_PROPERTY (int batchSize READ batchSize WRITE setBatchSize NOTIFY batchSizeChanged)
 
 public:
-    explicit SynoPS(QObject *parent = nullptr);
+    explicit SynoAlbum(SynoConn *conn, QObject *parent = nullptr);
 
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
+    Q_INVOKABLE void list();
 
-    SynoConn* conn();
+    Q_INVOKABLE SynoAlbum* getDescendantAlbum(const QString& name);
+    Q_INVOKABLE SynoAlbum* getAncestorAlbum();
 
-    static void registerQmlTypes();
+    QString path() const;
+    void setPath(const QString& path);
+
+    int offset() const;
+    void setOffset(int offt);
+
+    int batchSize() const;
+    void setBatchSize(int size);
 
 signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
+    void pathChanged();
+    void offsetChanged();
+    void batchSizeChanged();
+
+public slots:
+
+private:
+    static QString normalizedPath(const QString& path);
+    static QByteArray albumIdByPath(const QString& path);
+    static QString pathByAlbumId(const QByteArray& albumId);
+
+private:
+    SynoConn *m_conn;
+    QString m_path;
+    int m_offset;
+    int m_batchSize;
 };
 
-#endif // SYNOPS_H
+#endif // SYNOALBUM_H
