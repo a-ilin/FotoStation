@@ -22,11 +22,27 @@
  */
 
 #include <QDebug>
-#include <QtGui/QGuiApplication>
-#include <QtQml/QQmlApplicationEngine>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlPropertyMap>
 #include <QQuickWindow>
 
 #include "src/synops.h"
+
+static void populateRootContext(QQmlContext* ctx)
+{
+    QQmlPropertyMap* runtimeMap = new QQmlPropertyMap(ctx);
+    runtimeMap->setObjectName(QStringLiteral("RuntimeObject"));
+
+    bool isDebug = QCoreApplication::arguments().contains(QStringLiteral("--debug"));
+    if (isDebug) {
+        qInfo() << QStringLiteral("Debug mode is enabled");
+    }
+    runtimeMap->insert(QStringLiteral("isDebug"), isDebug);
+
+    ctx->setContextProperty(QStringLiteral("Runtime"), runtimeMap);
+}
 
 int main(int argc, char *argv[])
 {
@@ -42,6 +58,8 @@ int main(int argc, char *argv[])
     SynoPS::registerQmlTypes();
 
     engine.addImportPath(GUI_PREFIX_PATH);
+
+    populateRootContext(engine.rootContext());
 
     const QUrl url(QStringLiteral(GUI_PREFIX_PATH "/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

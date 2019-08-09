@@ -1,2 +1,3 @@
 module widgets
+FSFlickable 1.0 FSFlickable.qml
 FSTextField 1.0 FSTextField.qml

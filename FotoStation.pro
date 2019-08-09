@@ -25,6 +25,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
   src/synoalbum.h \
+  src/synoalbumdata.h \
   src/synoconn.h \
   src/synoerror.h \
   src/synops.h
@@ -32,6 +33,7 @@ HEADERS += \
 SOURCES += \
         src/main.cpp \
         src/synoalbum.cpp \
+        src/synoalbumdata.cpp \
         src/synoconn.cpp \
         src/synoerror.cpp \
         src/synops.cpp

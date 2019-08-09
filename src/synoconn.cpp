@@ -71,20 +71,14 @@ void SynoConn::authorize(const QString& username, const QString& password)
     formData << QByteArrayLiteral("password=") + password.toUtf8();
     formData << QByteArrayLiteral("remember_me=true");
 
-    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
-        QJsonValue jsonSuccess = json.object()["success"];
-        bool authSuccess = jsonSuccess.toBool();
-        if (authSuccess) {
-            qWarning() << QStringLiteral("Authorization successful!");
-            m_synoToken = json.object()["data"].toObject()["sid"].toString().toUtf8();
-            setStatus(SynoConn::AUTHORIZED);
-        } else {
-            qWarning() << QStringLiteral("Authorization failed!");
-        }
+    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](const QJsonObject& json) {
+        qWarning() << QStringLiteral("Authorization successful!");
+        m_synoToken = json[QStringLiteral("sid")].toString().toUtf8();
+        setStatus(SynoConn::AUTHORIZED);
         setIsConnecting(false);
-    }, [=](QNetworkReply* /*reply*/, const QJsonDocument& /*json*/) {
-            qWarning() << QStringLiteral("Authorization failed!");
-            setIsConnecting(false);
+    }, [=]() {
+        qWarning() << QStringLiteral("Authorization failed!");
+        setIsConnecting(false);
     });
 }
 
@@ -94,14 +88,9 @@ void SynoConn::checkAuth()
     formData << QByteArrayLiteral("method=checkauth");
     formData << QByteArrayLiteral("version=1");
 
-    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
-        QJsonValue jsonSuccess = json.object()["success"];
-        bool authSuccess = jsonSuccess.toBool();
-        if (!authSuccess) {
-            qWarning() << QStringLiteral("Check auth failed!");
-        }
+    sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Auth"), formData, [=](const QJsonObject& /*json*/) {
         setIsConnecting(false);
-    }, [=](QNetworkReply* /*reply*/, const QJsonDocument& /*json*/) {
+    }, [=]() {
         qWarning() << QStringLiteral("Check auth failed!");
     });
 }
@@ -116,13 +105,26 @@ bool SynoConn::isConnecting() const
     return m_isConnecting;
 }
 
+QStringList SynoConn::apiList() const
+{
+    QStringList apiList;
+    apiList.reserve(m_apiMap.size());
+    std::for_each(m_apiMap.keyBegin(), m_apiMap.keyEnd(), [&](const QByteArray& api) {
+        apiList << QString::fromLatin1(api);
+    });
+    return apiList;
+}
+
 void SynoConn::sendRequest(const QByteArray& api,
                            const QByteArrayList& formData,
-                           std::function<RequestCallback> callbackSuccess,
-                           std::function<RequestCallback> callbackFailure)
+                           std::function<RequestCallbackSuccess> callbackSuccess,
+                           std::function<RequestCallbackFailure> callbackFailure)
 {
     if (!m_apiMap.contains(api)) {
-        qWarning() << QStringLiteral(__FUNCTION__) << QStringLiteral(": Cannot send request: Unknown API: ") + api;
+        qWarning() << __FUNCTION__
+                   << QStringLiteral(": Cannot send request: Unknown API:")
+                   << api;
+        callbackFailure();
         return;
     }
 
@@ -166,7 +168,7 @@ void SynoConn::sendRequest(const QByteArray& api,
             if (QNetworkReply::NoError != reply->error()) {
                 errorString = reply->errorString();
             } else {
-                errorString = QStringLiteral("Unknown error");
+                errorString = QStringLiteral("Unknown network error");
             }
         }
 
@@ -182,10 +184,10 @@ void SynoConn::sendRequest(const QByteArray& api,
         }
 
         if (errorString.isEmpty()) {
-            QJsonValue jsonError = json.object()["error"];
+            QJsonValue jsonError = json.object()[QStringLiteral("error")];
             if (!jsonError.isUndefined() && !jsonError.isNull()) {
                 QJsonObject jsonErrorObject = jsonError.toObject();
-                auto errorCodeIter = jsonErrorObject.find("code");
+                auto errorCodeIter = jsonErrorObject.find(QStringLiteral("code"));
                 if (errorCodeIter != jsonErrorObject.end()) {
                     int errorCode = errorCodeIter.value().toInt(-1);
 
@@ -200,6 +202,11 @@ void SynoConn::sendRequest(const QByteArray& api,
             }
         }
 
+        QJsonValue jsonSuccess = json.object()[QStringLiteral("success")];
+        if (!jsonSuccess.toBool() && errorString.isEmpty()) {
+            errorString = QStringLiteral("SYNO success: FALSE");
+        }
+
         //qDebug() << "Headers: " << reply->rawHeaderPairs();
         qDebug() << "Body: " << replyBody;
 
@@ -210,11 +217,11 @@ void SynoConn::sendRequest(const QByteArray& api,
 
         if (errorString.isEmpty()) {
             if (callbackSuccess) {
-                callbackSuccess(reply, json);
+                callbackSuccess(json.object()[QStringLiteral("data")].toObject());
             }
         } else {
             if (callbackFailure) {
-                callbackFailure(reply, json);
+                callbackFailure();
             }
         }
 
@@ -224,10 +231,45 @@ void SynoConn::sendRequest(const QByteArray& api,
     });
 }
 
+void SynoConn::sendRequest(const QString& api, const QStringList& formData, QJSValue callbackSuccess, QJSValue callbackFailure)
+{
+    QByteArrayList baFormData;
+    baFormData.reserve(formData.size());
+    std::for_each(formData.cbegin(), formData.cend(), [&](const QString& formEntry) {
+        baFormData << formEntry.toUtf8();
+    });
+
+    auto errorLogger = [](const QString& contextMsg, const QJSValue& result) {
+        if (result.isError()) {
+            qWarning() << QStringLiteral("Error during JS callback execution: ")
+                       << contextMsg
+                       << QStringLiteral("Script Error: ")
+                       << result.toString();
+        }
+    };
+
+    sendRequest(api.toLatin1(), baFormData,
+                [=](const QJsonObject& jsonDataObject) mutable {
+                    QJsonDocument jsonDoc(jsonDataObject);
+                    QString jsonSerialized = QString::fromUtf8(jsonDoc.toJson(QJsonDocument::Indented));
+                    if (callbackSuccess.isCallable()) {
+                        QJSValue result = callbackSuccess.call(QJSValueList() << QJSValue(jsonSerialized));
+                        errorLogger(QStringLiteral("Success callback"), result);
+                    }
+                },
+                [=]() mutable {
+                    if (callbackFailure.isCallable()) {
+                        QJSValue result = callbackFailure.call();
+                        errorLogger(QStringLiteral("Error callback"), result);
+                    }
+                });
+}
+
 void SynoConn::populateApiMap()
 {
     m_apiMap.clear();
     m_apiMap[QByteArrayLiteral("SYNO.API.Info")] = QByteArrayLiteral("query.php");
+    emit apiListChanged();
 
     QByteArrayList formData;
     formData << QByteArrayLiteral("query=all");
@@ -235,10 +277,8 @@ void SynoConn::populateApiMap()
     formData << QByteArrayLiteral("version=1");
     formData << QByteArrayLiteral("ps_username=");
 
-    sendRequest(QByteArrayLiteral("SYNO.API.Info"), formData, [=](QNetworkReply* /*reply*/, const QJsonDocument& json) {
-        QJsonValue jsonData = json.object()["data"];
-        QJsonObject jsonDataObj = jsonData.toObject();
-        if (jsonData.isUndefined() || !jsonDataObj.size()) {
+    sendRequest(QByteArrayLiteral("SYNO.API.Info"), formData, [=](const QJsonObject& jsonDataObj) {
+        if (!jsonDataObj.size()) {
             qWarning() << QStringLiteral("Received empty API map!");
             setStatus(SynoConn::DISCONNECTED);
             setIsConnecting(false);
@@ -252,9 +292,10 @@ void SynoConn::populateApiMap()
                 }
             }
 
+            emit apiListChanged();
             setStatus(SynoConn::API_LOADED);
         }
-    }, [=](QNetworkReply* /*reply*/, const QJsonDocument& /*json*/){
+    }, [=](){
         setStatus(SynoConn::DISCONNECTED);
         setIsConnecting(false);
     });

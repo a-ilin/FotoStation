@@ -33,9 +33,9 @@ ApplicationWindow {
 
     visible: true
 
-    width: 640
+    width: 800
     minimumWidth: 640
-    height: 480
+    height: 600
     minimumHeight: 480
 
     title: qsTr("FotoStation")
@@ -68,10 +68,21 @@ ApplicationWindow {
         }
     }
 
-    Loader {
-        id: _loader
-
+    FocusScope {
         anchors.fill: parent
+        focus: true
+
+        Keys.onPressed: {
+            if (Runtime.isDebug && event.key === Qt.Key_D && (event.modifiers & Qt.ControlModifier)) {
+                event.accepted = true;
+                internal.showDebugWindow();
+            }
+        }
+
+        Loader {
+            id: _loader
+            anchors.fill: parent
+        }
     }
 
     SynoPS {
@@ -92,6 +103,9 @@ ApplicationWindow {
     QtObject {
         id: internal
 
+        property var debugWindow: null
+
+        readonly property url debugViewUrl: Qt.resolvedUrl("screens/DebugView.qml")
         readonly property url albumViewUrl: Qt.resolvedUrl("screens/AlbumView.qml")
         readonly property url footerUrl: Qt.resolvedUrl("screens/Footer.qml")
         readonly property url loginViewUrl: Qt.resolvedUrl("screens/LoginView.qml")
@@ -102,6 +116,21 @@ ApplicationWindow {
 
         function showAlbumViewForm() {
             _loader.setSource(internal.albumViewUrl, { synoPS: _syno });
+        }
+
+        function showDebugWindow() {
+            if (!internal.debugWindow) {
+                var comp = Qt.createComponent(internal.debugViewUrl);
+                var window = comp.createObject(root, { synoPS: _syno });
+                if (window) {
+                    internal.debugWindow = window;
+                    internal.debugWindow.show();
+                }
+            } else {
+                internal.debugWindow.show();
+                internal.debugWindow.raise();
+                internal.debugWindow.requestActivate();
+            }
         }
     }
 

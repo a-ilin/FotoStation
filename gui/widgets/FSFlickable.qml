@@ -22,46 +22,36 @@
  */
 
 import QtQuick 2.13
+import QtQuick.Controls 2.13
 
-import FotoStation 1.0
-
-Item {
+Flickable {
     id: root
 
-    /*! This property holds instance of SynoPS */
-    property var synoPS: null
+    /*! Content to be flicked */
+    property var flickableContent: null
 
-    /*! This property holds instance of SynoAlbum */
-    property var synoAlbum: null
+    contentItem.children: [flickableContent]
 
-    GridView {
-        id: _view
+    contentWidth: flickableContent.width
+    contentHeight: flickableContent.height
+    clip: true
 
-        anchors.fill: parent
-
-        model: root.synoAlbum
-        delegate: Rectangle {
-            color: Qt.rgba(Math.random(), Math.random(), Math.random(), 1.0)
-
-            Column {
-                Text {
-                    text: index
-                }
-                Text {
-                    text: model.display
-                }
-                Text {
-                    text: model.synoData ? model.synoData.type : ""
-                }
-            }
-        }
+    ScrollBar.vertical: ScrollBar {
+        active: true
+    }
+    ScrollBar.horizontal: ScrollBar {
+        active: true
     }
 
-    Component.onCompleted: {
-        if (!root.synoAlbum) {
-            root.synoAlbum = synoPS.getRootAlbum();
-        }
-
-        root.synoAlbum.refresh();
+    function ensureVisible(r)
+    {
+        if (contentX >= r.x)
+            contentX = r.x;
+        else if (contentX+width <= r.x+r.width)
+            contentX = r.x+r.width-width;
+        if (contentY >= r.y)
+            contentY = r.y;
+        else if (contentY+height <= r.y+r.height)
+            contentY = r.y+r.height-height;
     }
 }

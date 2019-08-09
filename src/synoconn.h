@@ -26,6 +26,7 @@
 
 #include <functional>
 
+#include <QJSValue>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
@@ -44,9 +45,11 @@ class SynoConn : public QObject
 
     Q_PROPERTY(SynoConnStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool isConnecting READ isConnecting NOTIFY isConnectingChanged)
+    Q_PROPERTY(QStringList apiList READ apiList NOTIFY apiListChanged)
 
 public:
-    typedef void RequestCallback(QNetworkReply* reply, const QJsonDocument& json);
+    typedef void RequestCallbackSuccess(const QJsonObject& jsonDataObject);
+    typedef void RequestCallbackFailure();
 
     enum SynoConnStatus
     {
@@ -59,26 +62,37 @@ public:
 public:
     explicit SynoConn(QObject *parent = nullptr);
 
-    void sendRequest(const QByteArray& api,
-                     const QByteArrayList& formData,
-                     std::function<RequestCallback> callbackSuccess = std::function<RequestCallback>(),
-                     std::function<RequestCallback> callbackFailure = std::function<RequestCallback>());
-
     SynoConnStatus status() const;
     bool isConnecting() const;
 
-    Q_INVOKABLE void connectToSyno(const QUrl& synoUrl);
-    Q_INVOKABLE void disconnectFromSyno();
-
-    Q_INVOKABLE void authorize(const QString& username, const QString& password);
-
-    Q_INVOKABLE void checkAuth();
+    QStringList apiList() const;
 
 signals:
     void statusChanged();
     void isConnectingChanged();
+    void apiListChanged();
 
 public slots:
+    void connectToSyno(const QUrl& synoUrl);
+    void disconnectFromSyno();
+    void authorize(const QString& username, const QString& password);
+    void checkAuth();
+
+    /*!
+     *  \brief Send request from CPP
+     */
+    void sendRequest(const QByteArray& api,
+                     const QByteArrayList& formData,
+                     std::function<RequestCallbackSuccess> callbackSuccess = std::function<RequestCallbackSuccess>(),
+                     std::function<RequestCallbackFailure> callbackFailure = std::function<RequestCallbackFailure>());
+
+    /*!
+     *  \brief Send request from QML
+     */
+    void sendRequest(const QString& api,
+                     const QStringList& formData,
+                     QJSValue callbackSuccess = QJSValue(),
+                     QJSValue callbackFailure = QJSValue());
 
 private:
     void populateApiMap();

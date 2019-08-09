@@ -11,5 +11,7 @@
         <file>assets/roller_32.gif</file>
         <file>assets/roller_64.gif</file>
         <file>screens/AlbumView.qml</file>
+        <file>screens/DebugView.qml</file>
+        <file>widgets/FSFlickable.qml</file>
     </qresource>
 </RCC>
