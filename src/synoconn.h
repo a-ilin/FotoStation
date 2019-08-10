@@ -24,33 +24,26 @@
 #ifndef SYNOCONN_H
 #define SYNOCONN_H
 
-#include <functional>
+#include <memory>
 
-#include <QJSValue>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonParseError>
 #include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
 #include <QObject>
+#include <QPointer>
 #include <QUrl>
-#include <QUrlQuery>
 
+class SynoRequest;
 
 class SynoConn : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(SynoConn)
 
+    Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
     Q_PROPERTY(SynoConnStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool isConnecting READ isConnecting NOTIFY isConnectingChanged)
     Q_PROPERTY(QStringList apiList READ apiList NOTIFY apiListChanged)
 
 public:
-    typedef void RequestCallbackSuccess(const QJsonObject& jsonDataObject);
-    typedef void RequestCallbackFailure();
-
     enum SynoConnStatus
     {
         DISCONNECTED = 0,
@@ -67,7 +60,28 @@ public:
 
     QStringList apiList() const;
 
+    QString errorString() const;
+    void setErrorString(const QString& err);
+
+    /*!
+     *  \brief Creates request with specified parameters
+     *
+     *  The caller is responsible for request release.
+     *  This method is intended to be used from QML.
+     */
+    Q_INVOKABLE SynoRequest* createRequest(const QString& api,
+                                           const QStringList& formData);
+
+    /*!
+     *  \brief Creates request with specified parameters
+     *
+     *  This method is intended to be used from C++.
+     */
+    Q_INVOKABLE std::shared_ptr<SynoRequest> createRequest(const QByteArray& api,
+                                                           const QByteArrayList& formData);
+
 signals:
+    void errorStringChanged();
     void statusChanged();
     void isConnectingChanged();
     void apiListChanged();
@@ -77,31 +91,20 @@ public slots:
     void disconnectFromSyno();
     void authorize(const QString& username, const QString& password);
     void checkAuth();
-
-    /*!
-     *  \brief Send request from CPP
-     */
-    void sendRequest(const QByteArray& api,
-                     const QByteArrayList& formData,
-                     std::function<RequestCallbackSuccess> callbackSuccess = std::function<RequestCallbackSuccess>(),
-                     std::function<RequestCallbackFailure> callbackFailure = std::function<RequestCallbackFailure>());
-
-    /*!
-     *  \brief Send request from QML
-     */
-    void sendRequest(const QString& api,
-                     const QStringList& formData,
-                     QJSValue callbackSuccess = QJSValue(),
-                     QJSValue callbackFailure = QJSValue());
+    void sendRequest(SynoRequest* request);
+    void cancelRequest(SynoRequest* request);
+    void cancelAllRequests();
 
 private:
+    QString apiPath(const QByteArray& api) const;
     void populateApiMap();
     void setStatus(SynoConnStatus status);
     void setIsConnecting(bool status);
 
 private:
+    QString m_errorString;
     QNetworkAccessManager m_networkManager;
-    QSet<QNetworkReply*> m_pendingReplies;
+    QSet< QPointer<SynoRequest> > m_pendingRequests;
     /*! Url containing protocol, host name, port, and path to PS */
     QUrl m_synoUrl;
     /*! Map of API query to API path */
@@ -114,5 +117,7 @@ private:
     /*! Session token */
     QByteArray m_synoToken;
 };
+
+uint qHash(const QPointer<SynoRequest>& req);
 
 #endif // SYNOCONN_H

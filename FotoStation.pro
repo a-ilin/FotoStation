@@ -28,7 +28,9 @@ HEADERS += \
   src/synoalbumdata.h \
   src/synoconn.h \
   src/synoerror.h \
-  src/synops.h
+  src/synops.h \
+  src/synoreplyjson.h \
+  src/synorequest.h
 
 SOURCES += \
         src/main.cpp \
@@ -36,7 +38,9 @@ SOURCES += \
         src/synoalbumdata.cpp \
         src/synoconn.cpp \
         src/synoerror.cpp \
-        src/synops.cpp
+        src/synops.cpp \
+        src/synoreplyjson.cpp \
+        src/synorequest.cpp
 
 CONFIG(release, debug|release): {
     DEFINES += GUI_PREFIX_PATH=\"qrc:\"

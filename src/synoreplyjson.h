@@ -21,51 +21,57 @@
  * SOFTWARE.
  */
 
-#include "synops.h"
+#ifndef SYNOREPLYJSON_H
+#define SYNOREPLYJSON_H
 
-#include <QtCore/private/qobject_p.h>
-#include <QtQml>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QObject>
 
-#include "synoalbum.h"
-#include "synoconn.h"
-#include "synorequest.h"
-#include "synoreplyjson.h"
+class QJSEngine;
+class QQmlEngine;
+class SynoRequest;
 
-class SynoPSPrivate : public QObjectPrivate
+class SynoReplyJSON : public QObject
 {
-public:
-    SynoPSPrivate()
-        : QObjectPrivate()
-    {
-    }
+    Q_OBJECT
 
-    SynoConn conn;
+    Q_PROPERTY(QString errorString READ errorString WRITE setErrorString NOTIFY errorStringChanged)
+    Q_PROPERTY(QString text READ text)
+
+public:
+    SynoReplyJSON(const QByteArray& jsonText, QObject* parent = nullptr);
+    SynoReplyJSON(const SynoRequest* synoRequest, QObject* parent = nullptr);
+
+    QString errorString() const;
+    void setErrorString(const QString& err);
+
+    const QJsonDocument& document() const;
+    const QJsonObject& dataObject() const;
+
+    QString text() const;
+
+signals:
+    void errorStringChanged();
+
+private:
+    void parseStatus();
+
+private:
+    QString m_errorString;
+    QJsonDocument m_json;
+    QJsonObject m_dataObject;
 };
 
-SynoPS::SynoPS(QObject *parent)
-    : QObject(*new SynoPSPrivate(), parent)
+class SynoReplyJSONFactory : public QObject
 {
-}
+    Q_OBJECT
 
-SynoAlbum* SynoPS::getRootAlbum()
-{
-    return new SynoAlbum(conn(), this);
-}
+public:
+    SynoReplyJSONFactory(QObject* parent = nullptr);
 
-SynoConn* SynoPS::conn()
-{
-    Q_D(SynoPS);
-    return &d->conn;
-}
+    static QObject* provider(QQmlEngine* engine, QJSEngine* scriptEngine);
+    Q_INVOKABLE QObject* create(SynoRequest* synoRequest) const;
+};
 
-void SynoPS::registerQmlTypes()
-{
-    const char* qmlUrl = "FotoStation";
-
-    qmlRegisterType<SynoPS>(qmlUrl, 1, 0, "SynoPS");
-    qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
-    qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
-    qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
-    qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::provider);
-}
-
+#endif // SYNOREPLYJSON_H

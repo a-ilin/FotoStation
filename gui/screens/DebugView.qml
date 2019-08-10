@@ -26,6 +26,7 @@ import QtQuick.Controls 2.13
 import QtQuick.Layouts 1.13
 import QtQuick.Window 2.13
 
+import FotoStation 1.0
 import assets 1.0
 import widgets 1.0
 
@@ -128,23 +129,30 @@ Window {
     QtObject {
         id: internal
 
-        property bool isAwaitingReply: false
+        property var request: null
+        readonly property bool isAwaitingReply: request !== null
 
         function sendRequest() {
             var formData = _formDataText.text.split('\n');
-            root.synoPS.conn.sendRequest(_apiSelector.currentText, formData,
-                                         processReply, processError);
-            isAwaitingReply = true;
-        }
+            internal.request = root.synoPS.conn.createRequest(_apiSelector.currentText, formData);
+            internal.request.send(function() {
+                if (!internal.request.errorString) {
+                    if (internal.request.contentType === SynoRequest.TEXT) {
+                        var replyJSON = SynoReplyJSONFactory.create(internal.request);
+                        if (!replyJSON.errorString) {
+                            _replyText.text = replyJSON.text;
+                        } else {
+                            _replyText.text = qsTr("Failed. ") + replyJSON.errorString;
+                        }
+                    } else {
+                        _replyText.text = qsTr("Content type: ", internal.request.contentType);
+                    }
+                } else {
+                    _replyText.text = qsTr("Failed. ") + internal.request.errorString;
+                }
 
-        function processReply(jsonText) {
-            _replyText.text = jsonText;
-            isAwaitingReply = false;
-        }
-
-        function processError() {
-            _replyText.text = qsTr("<Error occured>");
-            isAwaitingReply = false;
+                internal.request = null;
+            });
         }
     }
 }

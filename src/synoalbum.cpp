@@ -23,6 +23,8 @@
 
 #include "synoalbum.h"
 #include "synoconn.h"
+#include "synoreplyjson.h"
+#include "synorequest.h"
 
 #include <QJsonArray>
 #include <QMetaEnum>
@@ -140,44 +142,50 @@ void SynoAlbum::load(int offset)
     formData << QByteArrayLiteral("additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location");
     formData << QByteArrayLiteral("id=") + m_selfData.id;
 
-    m_conn->sendRequest(QByteArrayLiteral("SYNO.PhotoStation.Album"), formData, [=](const QJsonObject& json) {
-        int total = json[QStringLiteral("total")].toInt();
-        if (!total) {
-            return;
-        }
-
-        if (m_descendantData.size() && m_descendantData.size() != total) {
-            clear();
-            refresh();
-            return;
-        } else if (!m_descendantData.size()) {
-            this->beginInsertRows(QModelIndex(), 0, total - 1);
-            m_descendantData.resize(total);
-            this->endInsertRows();
-        }
-
-        QJsonArray items = json[QStringLiteral("items")].toArray();
-        if (items.size()) {
-            if (offset + items.size() > total) {
-                qWarning() << QStringLiteral("Too much items received: ") << items.size();
+    std::shared_ptr<SynoRequest> req = m_conn->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Album"), formData);
+    req->send(this, [this, offset, req] {
+        if (req->errorString().isEmpty()) {
+            SynoReplyJSON replyJSON(req.get());
+            int total = replyJSON.dataObject()[QStringLiteral("total")].toInt();
+            if (!total) {
                 return;
             }
 
-            int i = offset;
-            for (auto iter = items.cbegin(); iter != items.cend(); ++iter, ++i) {
-                SynoAlbumData* albumData = new SynoAlbumData();
-                albumData->readFrom(iter->toObject());
-                delete m_descendantData[i];
-                m_descendantData[i] = albumData;
+            if (m_descendantData.size() && m_descendantData.size() != total) {
+                clear();
+                refresh();
+                return;
+            } else if (!m_descendantData.size()) {
+                this->beginInsertRows(QModelIndex(), 0, total - 1);
+                m_descendantData.resize(total);
+                this->endInsertRows();
             }
-            emit this->dataChanged(index(offset), index(offset + items.size() - 1));
 
-            if (offset + items.size() < total) {
-                load(offset + items.size());
+            QJsonArray items = replyJSON.dataObject()[QStringLiteral("items")].toArray();
+            if (items.size()) {
+                if (offset + items.size() > total) {
+                    qWarning() << QStringLiteral("Too much items received: ") << items.size();
+                    return;
+                }
+
+                int i = offset;
+                for (auto iter = items.cbegin(); iter != items.cend(); ++iter, ++i) {
+                    SynoAlbumData* albumData = new SynoAlbumData();
+                    albumData->readFrom(iter->toObject());
+                    delete m_descendantData[i];
+                    m_descendantData[i] = albumData;
+                }
+                emit this->dataChanged(index(offset), index(offset + items.size() - 1));
+
+                if (offset + items.size() < total) {
+                    load(offset + items.size());
+                }
+            } else {
+                qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(replyJSON.errorString());
             }
+        } else {
+            qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(req->errorString());
         }
-    }, [=]() {
-        qWarning() << QStringLiteral("Error during retrieving album data!");
     });
 }
 
