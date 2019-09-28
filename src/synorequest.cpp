@@ -24,6 +24,7 @@
 #include "synoconn.h"
 #include "synorequest.h"
 
+#include <QDebug>
 #include <QMimeDatabase>
 
 SynoRequest::SynoRequest(const QByteArray& api, const QByteArrayList& formData, SynoConn* conn)

@@ -29,6 +29,7 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QUrl>
 
 class SynoRequest;

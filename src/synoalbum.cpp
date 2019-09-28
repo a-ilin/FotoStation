@@ -26,6 +26,7 @@
 #include "synoreplyjson.h"
 #include "synorequest.h"
 
+#include <QDebug>
 #include <QJsonArray>
 #include <QMetaEnum>
 

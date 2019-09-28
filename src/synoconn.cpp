@@ -25,7 +25,9 @@
 #include "synoerror.h"
 #include "synoreplyjson.h"
 #include "synorequest.h"
+#include "synotraits.h"
 
+#include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
@@ -52,7 +54,12 @@ void SynoConn::connectToSyno(const QUrl& synoUrl)
     setIsConnecting(true);
     m_synoUrl = synoUrl;
     if (synoUrl.scheme() == QStringLiteral("https")) {
+#ifndef QT_NO_SSL
         m_networkManager.connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
+#else
+        setErrorString(tr("Cannot use encrypted connection: SSL not available."));
+        return;
+#endif
     } else {
         m_networkManager.connectToHost(synoUrl.host(), static_cast<quint16>(synoUrl.port(80)));
     }

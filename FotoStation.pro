@@ -1,5 +1,5 @@
 QT += core core-private network quick widgets
-CONFIG += c++11 no_private_qt_headers_warning
+CONFIG += c++17 no_private_qt_headers_warning
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -18,32 +18,36 @@ QML_IMPORT_PATH = gui
 # Additional import path used to resolve QML modules just for Qt Quick Designer
 QML_DESIGNER_IMPORT_PATH = gui
 
+# Use correct value for __cplusplus on MSVC
+msvc: QMAKE_CXXFLAGS += /Zc:__cplusplus
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-  src/synoalbum.h \
-  src/synoalbumdata.h \
-  src/synoconn.h \
-  src/synoerror.h \
-  src/synops.h \
-  src/synoreplyjson.h \
-  src/synorequest.h
+    src/synoalbum.h \
+    src/synoalbumdata.h \
+    src/synoconn.h \
+    src/synoerror.h \
+    src/synops.h \
+    src/synoreplyjson.h \
+    src/synorequest.h \
+    src/synotraits.h
 
 SOURCES += \
-        src/main.cpp \
-        src/synoalbum.cpp \
-        src/synoalbumdata.cpp \
-        src/synoconn.cpp \
-        src/synoerror.cpp \
-        src/synops.cpp \
-        src/synoreplyjson.cpp \
-        src/synorequest.cpp
+    src/main.cpp \
+    src/synoalbum.cpp \
+    src/synoalbumdata.cpp \
+    src/synoconn.cpp \
+    src/synoerror.cpp \
+    src/synops.cpp \
+    src/synoreplyjson.cpp \
+    src/synorequest.cpp
 
 CONFIG(release, debug|release): {
-    DEFINES += GUI_PREFIX_PATH=\"qrc:\"
+    DEFINES += GUI_PREFIX_PATH=\"\\\"qrc:\\\"\"
     RESOURCES += gui/resources.qrc
 }
 
