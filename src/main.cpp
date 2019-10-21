@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 
+    QCoreApplication::setApplicationName("FotoStation");
+    QCoreApplication::setOrganizationName("FotoStation");
+
     QGuiApplication app(argc, argv);
 
     // ClearType text looks terrible without this

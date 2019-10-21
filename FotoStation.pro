@@ -34,6 +34,7 @@ HEADERS += \
     src/synops.h \
     src/synoreplyjson.h \
     src/synorequest.h \
+    src/synosettings.h \
     src/synotraits.h
 
 SOURCES += \
@@ -44,7 +45,8 @@ SOURCES += \
     src/synoerror.cpp \
     src/synops.cpp \
     src/synoreplyjson.cpp \
-    src/synorequest.cpp
+    src/synorequest.cpp \
+    src/synosettings.cpp
 
 CONFIG(release, debug|release): {
     DEFINES += GUI_PREFIX_PATH=\"\\\"qrc:\\\"\"

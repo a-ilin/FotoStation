@@ -21,53 +21,44 @@
  * SOFTWARE.
  */
 
-#include "synops.h"
+#ifndef SYNOSETTINGS_H
+#define SYNOSETTINGS_H
 
-#include <QtCore/private/qobject_p.h>
-#include <QtQml>
+#include <QObject>
+#include <QVariant>
 
-#include "synoalbum.h"
-#include "synoconn.h"
-#include "synorequest.h"
-#include "synoreplyjson.h"
-#include "synosettings.h"
+#include <memory>
 
-class SynoPSPrivate : public QObjectPrivate
+class QSettings;
+
+class SynoSettings : public QObject
 {
-public:
-    SynoPSPrivate()
-        : QObjectPrivate()
-    {
-    }
+    Q_OBJECT
+    Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 
-    SynoConn conn;
+public:
+    SynoSettings();
+
+    QString group() const;
+    void setGroup(const QString& group);
+
+    Q_INVOKABLE QVariant value(const QString& key) const;
+    Q_INVOKABLE void setValue(const QString& key, const QVariant& value);
+
+    /*! Returns true if the application is installed into system directory */
+    static bool isAppInstalled();
+
+    /*! Initialize before the first use */
+    static void initialize();
+
+signals:
+    void groupChanged();
+
+private:
+    void endGroups();
+
+private:
+    std::unique_ptr<QSettings> m_settings;
 };
 
-SynoPS::SynoPS(QObject *parent)
-    : QObject(*new SynoPSPrivate(), parent)
-{
-}
-
-SynoAlbum* SynoPS::getRootAlbum()
-{
-    return new SynoAlbum(conn(), this);
-}
-
-SynoConn* SynoPS::conn()
-{
-    Q_D(SynoPS);
-    return &d->conn;
-}
-
-void SynoPS::registerQmlTypes()
-{
-    const char* qmlUrl = "FotoStation";
-
-    qmlRegisterType<SynoPS>(qmlUrl, 1, 0, "SynoPS");
-    qmlRegisterType<SynoSettings>(qmlUrl, 1, 0, "SynoSettings");
-    qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
-    qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
-    qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
-    qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::provider);
-}
-
+#endif // SYNOSETTINGS_H

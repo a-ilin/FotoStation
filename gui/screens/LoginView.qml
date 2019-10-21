@@ -37,6 +37,11 @@ Item {
     implicitHeight: _groupBox.height
     implicitWidth: _groupBox.width
 
+    SynoSettings {
+        id: _settings
+        group: "connection"
+    }
+
     GroupBox {
         id: _groupBox
 
@@ -61,6 +66,7 @@ Item {
             FSTextField {
                 id: _host
                 enabled: !root.synoPS.conn.isConnecting
+                text: _settings.value("hostname") || ""
             }
 
             Item {
@@ -82,7 +88,7 @@ Item {
             FSTextField {
                 id: _psPath
                 enabled: !root.synoPS.conn.isConnecting
-                text: "/photo"
+                text: _settings.value("psPath") || "/photo"
             }
 
             Item {
@@ -104,6 +110,7 @@ Item {
             FSTextField {
                 id: _username
                 enabled: !root.synoPS.conn.isConnecting
+                text: _settings.value("username") || ""
             }
 
             Item {
@@ -167,6 +174,18 @@ Item {
 
             Item {
                 width: 1
+            }
+
+            CheckBox {
+                id: _rememberCredentials
+                enabled: !root.synoPS.conn.isConnecting
+
+                text: qsTr("Remember credentials")
+                checkState: Qt.Checked
+            }
+
+            Item {
+                width: 1
                 height: _connectButton.height * 0.5
                 Layout.columnSpan: 2
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
@@ -183,7 +202,7 @@ Item {
                 text: qsTr("Connect")
 
                 onClicked: {
-                    var scheme = _secureConnection.checkState === Qt.Checked ? "https://" : "http://";
+                    var scheme = _secureConnection.checked ? "https://" : "http://";
                     var url = scheme + _host.text + "/" + _psPath.text;
                     root.synoPS.conn.connectToSyno(url);
                 }
@@ -209,6 +228,9 @@ Item {
         target: root.synoPS.conn
         onStatusChanged: {
             if (root.synoPS.conn.status === SynoConn.API_LOADED) {
+                if (_rememberCredentials.checked) {
+                    internal.saveCredentials();
+                }
                 root.synoPS.conn.authorize(_username.text, _password.text);
             }
         }
@@ -216,6 +238,12 @@ Item {
 
     QtObject {
         id: internal
+
+        function saveCredentials() {
+            _settings.setValue("hostname", _host.text);
+            _settings.setValue("psPath", _psPath.text);
+            _settings.setValue("username", _username.text);
+        }
 
         readonly property bool isFormValid: !_wrongHostNameLabel.visible &&
                                             !_wrongPsPathLabel.visible &&
