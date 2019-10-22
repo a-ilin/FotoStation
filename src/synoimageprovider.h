@@ -21,47 +21,19 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
 
-#include <functional>
+#ifndef SYNOIMAGEPROVIDER_H
+#define SYNOIMAGEPROVIDER_H
 
-#include <QObject>
+#include <QQuickAsyncImageProvider>
 
-class QJSEngine;
-class QQmlEngine;
-
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
-
-class SynoPS : public QObject
+class SynoImageProvider : public QQuickAsyncImageProvider
 {
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
-
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
-
 public:
-    static SynoPS& instance();
-    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
+    SynoImageProvider();
 
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
+    QQuickImageResponse* requestImageResponse(const QString &id, const QSize &requestedSize) override;
 
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-    Q_INVOKABLE static QString toString(const QVariant& value);
-
-protected:
-    explicit SynoPS(QObject *parent = nullptr);
-
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
 };
 
-#endif // SYNOPS_H
+#endif // SYNOIMAGEPROVIDER_H

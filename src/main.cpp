@@ -29,6 +29,7 @@
 #include <QQuickWindow>
 
 #include "src/synops.h"
+#include "src/synoimageprovider.h"
 
 static void populateRootContext(QQmlContext* ctx)
 {
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     SynoPS::registerQmlTypes();
-
+    engine.addImageProvider("syno", new SynoImageProvider());
     engine.addImportPath(GUI_PREFIX_PATH);
 
     populateRootContext(engine.rootContext());

@@ -21,47 +21,48 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
+import QtQuick 2.13
+import QtGraphicalEffects 1.0
 
-#include <functional>
+import assets 1.0
 
-#include <QObject>
+Item {
+    id: root
 
-class QJSEngine;
-class QQmlEngine;
+    property alias image: _coverImage
 
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
+    readonly property bool isError: _coverImage.status === Image.Error
+    readonly property bool isLoaded: _coverImage.status === Image.Ready
 
-class SynoPS : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
+    implicitHeight: _coverImage.height
+    implicitWidth: _coverImage.width
 
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
+    Image {
+        id: _coverImage
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectFit
+        clip: true
+        source: Facade.coverUrlForThumb(model.synoData.id)
+    }
 
-public:
-    static SynoPS& instance();
-    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
+    FSIcon {
+        id: _errorIcon
+        anchors.centerIn: parent
+        source: Assets.icons.broken_document_64
+        visible: root.isError
+    }
 
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
+    AnimatedImage {
+        id: _loadingIndicator
+        source: _coverImage.status === Image.Loading ? Assets.animated.roller_64 : ""
+        visible: false
+    }
 
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-    Q_INVOKABLE static QString toString(const QVariant& value);
-
-protected:
-    explicit SynoPS(QObject *parent = nullptr);
-
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
-};
-
-#endif // SYNOPS_H
+    ColorOverlay {
+        anchors.centerIn: parent
+        width: _loadingIndicator.width
+        height: _loadingIndicator.height
+        source: _loadingIndicator
+        color: Assets.colors.iconDefault
+    }
+}

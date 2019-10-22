@@ -28,9 +28,6 @@ import FotoStation 1.0
 Item {
     id: root
 
-    /*! This property holds instance of SynoPS */
-    property var synoPS: null
-
     /*! This property holds instance of SynoAlbum */
     property var synoAlbum: null
 
@@ -41,25 +38,56 @@ Item {
 
         model: root.synoAlbum
         delegate: Rectangle {
-            color: Qt.rgba(Math.random(), Math.random(), Math.random(), 1.0)
+            id: _delegate
 
-            Column {
-                Text {
-                    text: index
-                }
-                Text {
-                    text: model.display
-                }
-                Text {
-                    text: model.synoData ? model.synoData.type : ""
-                }
+            readonly property int border: 1
+
+            color: "black"
+            width: 150
+            height: 120 + _albumTitle.height + border * 2
+
+            FSCoverArt {
+                id: _albumCover
+                anchors.left: parent.left
+                anchors.leftMargin: _delegate.border
+                anchors.right: parent.right
+                anchors.rightMargin: _delegate.border
+                anchors.top: parent.top
+                image.source: Facade.coverUrlForThumb(model.synoData.id)
             }
+
+            Rectangle {
+                color: "white"
+                anchors.left: parent.left
+                anchors.leftMargin: _delegate.border
+                anchors.right: parent.right
+                anchors.rightMargin: _delegate.border
+                anchors.top: _albumCover.top
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: _delegate.border
+            }
+
+            Text {
+                id: _albumTitle
+                height: _albumTitleMetrics.height
+                width: parent.width - _delegate.border * 2
+                text: model.display
+                elide: Text.ElideRight
+                maximumLineCount: 2
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        TextMetrics {
+            id: _albumTitleMetrics
+            text: "MMM\MMM"
         }
     }
 
     Component.onCompleted: {
         if (!root.synoAlbum) {
-            root.synoAlbum = synoPS.getRootAlbum();
+            root.synoAlbum = SynoPS.getRootAlbum();
         }
 
         root.synoAlbum.refresh();

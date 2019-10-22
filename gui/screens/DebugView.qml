@@ -33,9 +33,6 @@ import widgets 1.0
 Window {
     id: root
 
-    /*! This property holds instance of SynoPS */
-    property var synoPS: null
-
     width: 640
     height: 480
 
@@ -58,7 +55,7 @@ Window {
 
                 ComboBox {
                     id: _apiSelector
-                    model: synoPS.conn.apiList
+                    model: SynoPS.conn.apiList
                     Layout.fillWidth: true
                 }
             }
@@ -134,7 +131,7 @@ Window {
 
         function sendRequest() {
             var formData = _formDataText.text.split('\n');
-            internal.request = root.synoPS.conn.createRequest(_apiSelector.currentText, formData);
+            internal.request = SynoPS.conn.createRequest(_apiSelector.currentText, formData);
             internal.request.send(function() {
                 if (!internal.request.errorString) {
                     if (internal.request.contentType === SynoRequest.TEXT) {
@@ -145,7 +142,7 @@ Window {
                             _replyText.text = qsTr("Failed. ") + replyJSON.errorString;
                         }
                     } else {
-                        _replyText.text = qsTr("Content type: ", internal.request.contentType);
+                        _replyText.text = qsTr("Content type: ") + Number(internal.request.contentType);
                     }
                 } else {
                     _replyText.text = qsTr("Failed. ") + internal.request.errorString;

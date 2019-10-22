@@ -21,47 +21,33 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
 
-#include <functional>
+#ifndef SYNOIMAGEPROVIDER_P_H
+#define SYNOIMAGEPROVIDER_P_H
 
-#include <QObject>
+#include <QQuickImageResponse>
 
-class QJSEngine;
-class QQmlEngine;
+#include "synorequest.h"
 
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
-
-class SynoPS : public QObject
+class SynoImageResponse : public QQuickImageResponse
 {
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
-
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
-
 public:
-    static SynoPS& instance();
-    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
+    SynoImageResponse(const QSize& size);
 
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
+    void loadThumb(const QByteArray& id);
 
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-    Q_INVOKABLE static QString toString(const QVariant& value);
+    QQuickTextureFactory* textureFactory() const override;
+    QString errorString() const override;
+    void cancel() override;
 
 protected:
-    explicit SynoPS(QObject *parent = nullptr);
+    void processImage();
 
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
+protected:
+    QSize m_size;
+    QString m_errorString;
+    QImage m_image;
+    std::shared_ptr<SynoRequest> m_req;
 };
 
-#endif // SYNOPS_H
+#endif // SYNOIMAGEPROVIDER_P_H

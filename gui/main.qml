@@ -64,7 +64,7 @@ ApplicationWindow {
 
     footer: Loader {
         Component.onCompleted: {
-            setSource(internal.footerUrl, { synoPS: _syno });
+            setSource(internal.footerUrl);
         }
     }
 
@@ -85,16 +85,12 @@ ApplicationWindow {
         }
     }
 
-    SynoPS {
-        id: _syno
-    }
-
     Connections {
-        target: _syno.conn
+        target: SynoPS.conn
         onStatusChanged: {
-            if (_syno.conn.status === SynoConn.AUTHORIZED) {
+            if (SynoPS.conn.status === SynoConn.AUTHORIZED) {
                 internal.showAlbumViewForm();
-            } else if (_syno.conn.status === SynoConn.DISCONNECTED) {
+            } else if (SynoPS.conn.status === SynoConn.DISCONNECTED) {
                 internal.showAuthorizationForm();
             }
         }
@@ -111,17 +107,17 @@ ApplicationWindow {
         readonly property url loginViewUrl: Qt.resolvedUrl("screens/LoginView.qml")
 
         function showAuthorizationForm() {
-            _loader.setSource(internal.loginViewUrl, { synoPS: _syno });
+            _loader.setSource(internal.loginViewUrl);
         }
 
         function showAlbumViewForm() {
-            _loader.setSource(internal.albumViewUrl, { synoPS: _syno });
+            _loader.setSource(internal.albumViewUrl);
         }
 
         function showDebugWindow() {
             if (!internal.debugWindow) {
                 var comp = Qt.createComponent(internal.debugViewUrl);
-                var window = comp.createObject(root, { synoPS: _syno });
+                var window = comp.createObject(root);
                 if (window) {
                     internal.debugWindow = window;
                     internal.debugWindow.show();

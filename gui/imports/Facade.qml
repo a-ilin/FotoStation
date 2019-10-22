@@ -21,47 +21,20 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
+pragma Singleton
 
-#include <functional>
+import QtQuick 2.13
 
-#include <QObject>
+import FotoStation 1.0
 
-class QJSEngine;
-class QQmlEngine;
+QtObject {
+    id: root
 
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
+    function coverUrlForThumb(albumId) {
+        if (albumId && albumId !== "") {
+            return "image://syno/thumb/" + SynoPS.toString(albumId);
+        }
+        return "";
+    }
 
-class SynoPS : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
-
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
-
-public:
-    static SynoPS& instance();
-    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
-
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
-
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-    Q_INVOKABLE static QString toString(const QVariant& value);
-
-protected:
-    explicit SynoPS(QObject *parent = nullptr);
-
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
-};
-
-#endif // SYNOPS_H
+}

@@ -31,6 +31,8 @@ HEADERS += \
     src/synoalbumdata.h \
     src/synoconn.h \
     src/synoerror.h \
+    src/synoimageprovider.h \
+    src/synoimageprovider_p.h \
     src/synops.h \
     src/synoreplyjson.h \
     src/synorequest.h \
@@ -43,6 +45,7 @@ SOURCES += \
     src/synoalbumdata.cpp \
     src/synoconn.cpp \
     src/synoerror.cpp \
+    src/synoimageprovider.cpp \
     src/synops.cpp \
     src/synoreplyjson.cpp \
     src/synorequest.cpp \

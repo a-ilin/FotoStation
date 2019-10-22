@@ -21,47 +21,31 @@
  * SOFTWARE.
  */
 
-#ifndef SYNOPS_H
-#define SYNOPS_H
+import QtQuick 2.13
+import QtGraphicalEffects 1.0
 
-#include <functional>
+import assets 1.0
 
-#include <QObject>
+Item {
+    id: root
 
-class QJSEngine;
-class QQmlEngine;
+    property alias color: _effect.color
+    property alias source: _srcImage.source
 
-class SynoAlbum;
-class SynoConn;
-class SynoPSPrivate;
+    implicitHeight: _srcImage.height
+    implicitWidth: _srcImage.width
 
-class SynoPS : public QObject
-{
-    Q_OBJECT
-    Q_DECLARE_PRIVATE(SynoPS)
-    Q_DISABLE_COPY(SynoPS)
+    Image {
+        id: _srcImage
+        visible: false
+    }
 
-    Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
-
-public:
-    static SynoPS& instance();
-    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
-
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
-
-    SynoConn* conn();
-
-    static void registerQmlTypes();
-
-    Q_INVOKABLE static QString toString(const QVariant& value);
-
-protected:
-    explicit SynoPS(QObject *parent = nullptr);
-
-signals:
-    // this signal is never emitted, it is added to suppress
-    // Qt warning about non-NOTIFYable properties
-    void connChanged();
-};
-
-#endif // SYNOPS_H
+    ColorOverlay {
+        id: _effect
+        anchors.centerIn: parent
+        height: _srcImage.height
+        width: _srcImage.width
+        source: _srcImage
+        color: Assets.colors.iconDefault
+    }
+}

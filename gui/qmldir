@@ -1,0 +1,2 @@
+module FotoStation
+singleton Facade 1.0 imports/Facade.qml

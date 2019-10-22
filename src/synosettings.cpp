@@ -39,7 +39,7 @@ SynoSettings::SynoSettings()
                                        QSettings::IniFormat));
     }
 
-    m_settings->setIniCodec("UTF-16");
+    m_settings->setIniCodec("UTF-8");
 }
 
 QString SynoSettings::group() const

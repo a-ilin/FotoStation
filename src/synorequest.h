@@ -27,6 +27,7 @@
 #include <functional>
 
 #include <QJSValue>
+#include <QMimeType>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QObject>
@@ -38,7 +39,8 @@ class SynoRequest : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString contentEncoding READ contentEncoding NOTIFY contentEncodingChanged)
+    Q_PROPERTY(QByteArray contentEncoding READ contentEncoding NOTIFY contentTypeChanged)
+    Q_PROPERTY(QMimeType contentMimeType READ contentMimeType NOTIFY contentTypeChanged)
     Q_PROPERTY(ContentType contentType READ contentType NOTIFY contentTypeChanged)
     Q_PROPERTY(QString errorString READ errorString WRITE setErrorString NOTIFY errorStringChanged)
 
@@ -70,8 +72,10 @@ public:
     QString errorString() const;
     void setErrorString(const QString& err);
 
+    const QByteArray& contentMimeTypeRaw() const;
+    QMimeType contentMimeType() const;
     ContentType contentType() const;
-    QString contentEncoding() const;
+    const QByteArray& contentEncoding() const;
 
 public slots:
     void send();
@@ -80,7 +84,6 @@ public slots:
     void cancel();
 
 signals:
-    void contentEncodingChanged();
     void contentTypeChanged();
     void errorStringChanged();
     void finished();
@@ -98,8 +101,10 @@ private:
     QNetworkRequest m_request;
     QPointer<QNetworkReply> m_reply;
     QString m_errorString;
+    QByteArray m_contentMimeTypeRaw;
+    QMimeType m_contentMimeType;
     ContentType m_contentType;
-    QString m_contentEncoding;
+    QByteArray m_contentEncoding;
     QByteArray m_replyBody;
 };
 

@@ -92,12 +92,22 @@ void SynoRequest::setErrorString(const QString& err)
     emit errorStringChanged();
 }
 
+const QByteArray& SynoRequest::contentMimeTypeRaw() const
+{
+    return m_contentMimeTypeRaw;
+}
+
+QMimeType SynoRequest::contentMimeType() const
+{
+    return m_contentMimeType;
+}
+
 SynoRequest::ContentType SynoRequest::contentType() const
 {
     return m_contentType;
 }
 
-QString SynoRequest::contentEncoding() const
+const QByteArray& SynoRequest::contentEncoding() const
 {
     return m_contentEncoding;
 }
@@ -146,28 +156,28 @@ void SynoRequest::cancel()
 
 void SynoRequest::parseContentType()
 {
-    QStringList contentTypeList(m_reply->header(QNetworkRequest::ContentTypeHeader).toString().split(';'));
-    QString contentType;
+    m_contentMimeTypeRaw = m_reply->header(QNetworkRequest::ContentTypeHeader).toByteArray();
+    QList<QByteArray> contentTypeList(m_contentMimeTypeRaw.split(';'));
+    QByteArray contentType;
     if (contentTypeList.size() > 0) {
         contentType = contentTypeList[0];
     }
 
     if (contentTypeList.size() > 1) {
-        QString contentEncoding = contentTypeList[1].trimmed();
-        QString charsetPrefix(QStringLiteral("charset="));
+        QByteArray contentEncoding = contentTypeList[1].trimmed();
+        QByteArray charsetPrefix(QByteArrayLiteral("charset="));
         if (contentEncoding.startsWith(charsetPrefix)) {
             m_contentEncoding = contentEncoding.mid(charsetPrefix.size());
-            emit contentEncodingChanged();
         }
     }
 
     QMimeDatabase mimeDb;
-    QMimeType mimeType = mimeDb.mimeTypeForName(contentType);
-    if (mimeType.inherits(QStringLiteral("text/plain"))) {
+    m_contentMimeType = mimeDb.mimeTypeForName(contentType);
+    if (m_contentMimeType.inherits(QStringLiteral("text/plain"))) {
         m_contentType = TEXT;
-    } else if (mimeType.inherits(QStringLiteral("image/jpeg"))) {
+    } else if (m_contentMimeType.inherits(QStringLiteral("image/jpeg"))) {
         m_contentType = IMAGE_JPEG;
-    } else if (mimeType.inherits(QStringLiteral("image"))) {
+    } else if (m_contentMimeType.inherits(QStringLiteral("image"))) {
         m_contentType = IMAGE_OTHER;
     }
 

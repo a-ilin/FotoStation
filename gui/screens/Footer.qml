@@ -31,9 +31,6 @@ import assets 1.0
 Rectangle {
     id: root
 
-    /*! This property holds instance of SynoPS */
-    property var synoPS: null
-
     implicitHeight: Math.max(_connectionProgressImage.height, _fm.height)
                     + internal.borderMargin * 2 + _underline.height
     implicitWidth: parent.width
@@ -61,7 +58,7 @@ Rectangle {
             id: _connectionProgressImage
             height: 16
             width: 16
-            source: root.synoPS.conn.isConnecting ? Assets.roller_16 : ""
+            source: SynoPS.conn.isConnecting ? Assets.animated.roller_16 : ""
         }
 
         Rectangle {
@@ -79,9 +76,9 @@ Rectangle {
             width: root.width * 0.25
 
             text: {
-                if (root.synoPS.conn.isConnecting) {
+                if (SynoPS.conn.isConnecting) {
                     return qsTr("Connecting");
-                } else if(root.synoPS.conn.status === SynoConn.AUTHORIZED) {
+                } else if(SynoPS.conn.status === SynoConn.AUTHORIZED) {
                     return qsTr("Logged in");
                 } else {
                     return qsTr("Not connected");

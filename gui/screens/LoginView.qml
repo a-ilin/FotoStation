@@ -31,9 +31,6 @@ import widgets 1.0
 Item {
     id: root
 
-    /*! This property holds instance of SynoPS */
-    property var synoPS: null
-
     implicitHeight: _groupBox.height
     implicitWidth: _groupBox.width
 
@@ -65,7 +62,7 @@ Item {
 
             FSTextField {
                 id: _host
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
                 text: _settings.value("hostname") || ""
             }
 
@@ -87,7 +84,7 @@ Item {
 
             FSTextField {
                 id: _psPath
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
                 text: _settings.value("psPath") || "/photo"
             }
 
@@ -109,7 +106,7 @@ Item {
 
             FSTextField {
                 id: _username
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
                 text: _settings.value("username") || ""
             }
 
@@ -131,7 +128,7 @@ Item {
 
             FSTextField {
                 id: _password
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
                 echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
             }
@@ -154,7 +151,7 @@ Item {
 
             CheckBox {
                 id: _secureConnection
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
 
                 text: qsTr("Secure connection")
                 checkState: Qt.Checked
@@ -178,7 +175,7 @@ Item {
 
             CheckBox {
                 id: _rememberCredentials
-                enabled: !root.synoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting
 
                 text: qsTr("Remember credentials")
                 checkState: Qt.Checked
@@ -193,7 +190,7 @@ Item {
 
             Button {
                 id: _connectButton
-                visible: !root.synoPS.conn.isConnecting && root.synoPS.conn.status === SynoConn.DISCONNECTED
+                visible: !SynoPS.conn.isConnecting && SynoPS.conn.status === SynoConn.DISCONNECTED
                 enabled: internal.isFormValid
 
                 Layout.columnSpan: 2
@@ -204,7 +201,7 @@ Item {
                 onClicked: {
                     var scheme = _secureConnection.checked ? "https://" : "http://";
                     var url = scheme + _host.text + "/" + _psPath.text;
-                    root.synoPS.conn.connectToSyno(url);
+                    SynoPS.conn.connectToSyno(url);
                 }
             }
 
@@ -215,23 +212,23 @@ Item {
                 Layout.columnSpan: 2
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
 
-                text: root.synoPS.conn.isConnecting ? qsTr("Abort connection") : qsTr("Disconnect")
+                text: SynoPS.conn.isConnecting ? qsTr("Abort connection") : qsTr("Disconnect")
 
                 onClicked: {
-                    root.synoPS.conn.disconnectFromSyno();
+                    SynoPS.conn.disconnectFromSyno();
                 }
             }
         }
     }
 
     Connections {
-        target: root.synoPS.conn
+        target: SynoPS.conn
         onStatusChanged: {
-            if (root.synoPS.conn.status === SynoConn.API_LOADED) {
+            if (SynoPS.conn.status === SynoConn.API_LOADED) {
                 if (_rememberCredentials.checked) {
                     internal.saveCredentials();
                 }
-                root.synoPS.conn.authorize(_username.text, _password.text);
+                SynoPS.conn.authorize(_username.text, _password.text);
             }
         }
     }
