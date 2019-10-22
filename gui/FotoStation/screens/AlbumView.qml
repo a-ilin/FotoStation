@@ -35,45 +35,53 @@ Item {
     GridView {
         id: _view
 
+        readonly property int border: 1
+
         anchors.fill: parent
+
+        cellWidth: 150
+        cellHeight: 120 + _albumTitleMetrics.height + border * 2
 
         model: root.synoAlbum
         delegate: Rectangle {
             id: _delegate
 
-            readonly property int border: 1
+            width: _view.cellWidth - 4
+            height: _view.cellHeight - 4
 
             color: "black"
-            width: 150
-            height: 120 + _albumTitle.height + border * 2
 
             FSCoverArt {
                 id: _albumCover
-                anchors.left: parent.left
-                anchors.leftMargin: _delegate.border
-                anchors.right: parent.right
-                anchors.rightMargin: _delegate.border
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width - _view.border * 2
                 anchors.top: parent.top
+                anchors.topMargin: _view.border
+                anchors.bottom: _albumTitle.top
+                anchors.bottomMargin: _view.border
                 image.source: Facade.coverUrlForThumb(model.synoData.id)
             }
 
             Rectangle {
                 color: "white"
-                anchors.left: parent.left
-                anchors.leftMargin: _delegate.border
-                anchors.right: parent.right
-                anchors.rightMargin: _delegate.border
-                anchors.top: _albumCover.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width - _view.border * 2
+                anchors.top: _albumCover.bottom
+                anchors.topMargin: _view.border
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: _delegate.border
+                anchors.bottomMargin: _view.border
             }
 
             Text {
                 id: _albumTitle
-                height: _albumTitleMetrics.height
-                width: parent.width - _delegate.border * 2
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: _view.border
+                anchors.horizontalCenter: parent.horizontalCenter
+                height: _albumTitleMetrics.height * maximumLineCount
+                width: parent.width - _view.border * 2
                 text: model.display
-                elide: Text.ElideRight
+                elide: _albumTitleMetrics.elide
+                wrapMode: Text.Wrap
                 maximumLineCount: 2
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -82,7 +90,8 @@ Item {
 
         TextMetrics {
             id: _albumTitleMetrics
-            text: "MMM\MMM"
+            elide: Qt.ElideRight
+            text: "MMM"
         }
     }
 

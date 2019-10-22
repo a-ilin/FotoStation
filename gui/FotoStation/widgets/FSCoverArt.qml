@@ -34,26 +34,23 @@ Item {
     readonly property bool isError: _coverImage.status === Image.Error
     readonly property bool isLoaded: _coverImage.status === Image.Ready
 
-    implicitHeight: _coverImage.height
-    implicitWidth: _coverImage.width
-
     Image {
         id: _coverImage
         anchors.fill: parent
-        fillMode: Image.PreserveAspectFit
+        fillMode: Image.PreserveAspectCrop
         clip: true
     }
 
     FSIcon {
         id: _errorIcon
         anchors.centerIn: parent
-        source: Assets.icons.broken_document_64
+        source: Assets.icons.broken_document_32
         visible: root.isError
     }
 
     AnimatedImage {
         id: _loadingIndicator
-        source: _coverImage.status === Image.Loading ? Assets.animated.roller_64 : ""
+        source: _coverImage.status === Image.Loading ? Assets.animated.roller_32 : ""
         visible: false
     }
 
