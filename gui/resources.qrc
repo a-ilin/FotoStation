@@ -1,29 +1,29 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
-        <file>qmldir</file>
-        <file>imports/Facade.qml</file>
-        <file>widgets/FSCoverArt.qml</file>
-        <file>widgets/FSFlickable.qml</file>
-        <file>widgets/FSIcon.qml</file>
-        <file>widgets/FSTextField.qml</file>
-        <file>widgets/qmldir</file>
-        <file>screens/LoginView.qml</file>
-        <file>screens/Footer.qml</file>
-        <file>assets/Assets.qml</file>
-        <file>assets/qmldir</file>
-        <file>assets/animated/roller_16.gif</file>
-        <file>assets/animated/roller_32.gif</file>
-        <file>assets/animated/roller_64.gif</file>
-        <file>assets/icons/broken_document_12.png</file>
-        <file>assets/icons/broken_document_16.png</file>
-        <file>assets/icons/broken_document_32.png</file>
-        <file>assets/icons/broken_document_48.png</file>
-        <file>assets/icons/broken_document_64.png</file>
-        <file>assets/icons/broken_document_128.png</file>
-        <file>assets/icons/broken_document_256.png</file>
-        <file>assets/icons/broken_document_512.png</file>
-        <file>screens/AlbumView.qml</file>
-        <file>screens/DebugView.qml</file>
+        <file>FotoStation/qmldir</file>
+        <file>FotoStation/imports/Facade.qml</file>
+        <file>FotoStation/widgets/FSCoverArt.qml</file>
+        <file>FotoStation/widgets/FSFlickable.qml</file>
+        <file>FotoStation/widgets/FSIcon.qml</file>
+        <file>FotoStation/widgets/FSTextField.qml</file>
+        <file>FotoStation/widgets/qmldir</file>
+        <file>FotoStation/screens/LoginView.qml</file>
+        <file>FotoStation/screens/Footer.qml</file>
+        <file>FotoStation/assets/Assets.qml</file>
+        <file>FotoStation/assets/qmldir</file>
+        <file>FotoStation/assets/animated/roller_16.gif</file>
+        <file>FotoStation/assets/animated/roller_32.gif</file>
+        <file>FotoStation/assets/animated/roller_64.gif</file>
+        <file>FotoStation/assets/icons/broken_document_12.png</file>
+        <file>FotoStation/assets/icons/broken_document_16.png</file>
+        <file>FotoStation/assets/icons/broken_document_32.png</file>
+        <file>FotoStation/assets/icons/broken_document_48.png</file>
+        <file>FotoStation/assets/icons/broken_document_64.png</file>
+        <file>FotoStation/assets/icons/broken_document_128.png</file>
+        <file>FotoStation/assets/icons/broken_document_256.png</file>
+        <file>FotoStation/assets/icons/broken_document_512.png</file>
+        <file>FotoStation/screens/AlbumView.qml</file>
+        <file>FotoStation/screens/DebugView.qml</file>
     </qresource>
 </RCC>

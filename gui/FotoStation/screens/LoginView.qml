@@ -26,7 +26,7 @@ import QtQuick.Controls 2.13
 import QtQuick.Layouts 1.13
 
 import FotoStation 1.0
-import widgets 1.0
+import FotoStation.widgets 1.0
 
 Item {
     id: root

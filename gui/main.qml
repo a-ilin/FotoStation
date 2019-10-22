@@ -101,10 +101,10 @@ ApplicationWindow {
 
         property var debugWindow: null
 
-        readonly property url debugViewUrl: Qt.resolvedUrl("screens/DebugView.qml")
-        readonly property url albumViewUrl: Qt.resolvedUrl("screens/AlbumView.qml")
-        readonly property url footerUrl: Qt.resolvedUrl("screens/Footer.qml")
-        readonly property url loginViewUrl: Qt.resolvedUrl("screens/LoginView.qml")
+        readonly property url debugViewUrl: Qt.resolvedUrl("FotoStation/screens/DebugView.qml")
+        readonly property url albumViewUrl: Qt.resolvedUrl("FotoStation/screens/AlbumView.qml")
+        readonly property url footerUrl: Qt.resolvedUrl("FotoStation/screens/Footer.qml")
+        readonly property url loginViewUrl: Qt.resolvedUrl("FotoStation/screens/LoginView.qml")
 
         function showAuthorizationForm() {
             _loader.setSource(internal.loginViewUrl);

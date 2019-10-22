@@ -24,7 +24,7 @@
 import QtQuick 2.13
 import QtGraphicalEffects 1.0
 
-import assets 1.0
+import FotoStation.assets 1.0
 
 Item {
     id: root
@@ -42,7 +42,6 @@ Item {
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         clip: true
-        source: Facade.coverUrlForThumb(model.synoData.id)
     }
 
     FSIcon {

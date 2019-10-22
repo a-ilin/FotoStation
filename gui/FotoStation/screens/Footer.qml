@@ -26,7 +26,7 @@ import QtQuick.Controls 2.13
 import QtQuick.Layouts 1.13
 
 import FotoStation 1.0
-import assets 1.0
+import FotoStation.assets 1.0
 
 Rectangle {
     id: root

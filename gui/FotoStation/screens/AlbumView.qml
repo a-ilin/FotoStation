@@ -24,6 +24,7 @@
 import QtQuick 2.13
 
 import FotoStation 1.0
+import FotoStation.widgets 1.0
 
 Item {
     id: root

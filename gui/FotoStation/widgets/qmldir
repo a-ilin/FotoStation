@@ -1,3 +1,5 @@
 module widgets
+FSCoverArt 1.0 FSCoverArt.qml
 FSFlickable 1.0 FSFlickable.qml
+FSIcon 1.0 FSIcon.qml
 FSTextField 1.0 FSTextField.qml
