@@ -25,7 +25,11 @@
 #include "synorequest.h"
 
 #include <QDebug>
+#include <QMetaObject>
 #include <QMimeDatabase>
+#include <QThread>
+
+#include <functional>
 
 SynoRequest::SynoRequest(const QByteArray& api, const QByteArrayList& formData, SynoConn* conn)
     : QObject()
@@ -36,6 +40,11 @@ SynoRequest::SynoRequest(const QByteArray& api, const QByteArrayList& formData, 
     , m_contentType(UNKNOWN)
 {
     Q_ASSERT(conn);
+
+    // ensure the slot execution is synchronized to connection object
+    if (QThread::currentThread() != m_conn->thread()) {
+        moveToThread(m_conn->thread());
+    }
 }
 
 SynoRequest::~SynoRequest()
@@ -72,6 +81,7 @@ QNetworkReply* SynoRequest::reply() const
 
 void SynoRequest::setReply(QNetworkReply* reply)
 {
+    Q_ASSERT(!m_reply);
     m_reply = reply;
     connect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
 }
@@ -115,7 +125,12 @@ const QByteArray& SynoRequest::contentEncoding() const
 void SynoRequest::send()
 {
     if (m_conn) {
-        m_conn->sendRequest(this);
+        if (QThread::currentThread() == m_conn->thread()) {
+            m_conn->sendRequest(this);
+        } else {
+            QMetaObject::invokeMethod(this, std::bind(qOverload<void>(&SynoRequest::send), this),
+                                      Qt::QueuedConnection, nullptr);
+        }
     } else {
         setErrorString(tr("Cannot send request. Connection object was destroyed or not set."));
     }
@@ -148,7 +163,11 @@ void SynoRequest::send(QJSValue callback)
 void SynoRequest::cancel()
 {
     if (m_conn) {
-        m_conn->cancelRequest(this);
+        if (QThread::currentThread() == m_conn->thread()) {
+            m_conn->cancelRequest(this);
+        } else {
+            QMetaObject::invokeMethod(this, std::bind(&SynoRequest::cancel, this), Qt::QueuedConnection);
+        }
     } else {
         setErrorString(tr("Cannot cancel request. Connection object was destroyed or not set."));
     }

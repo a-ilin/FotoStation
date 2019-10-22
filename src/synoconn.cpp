@@ -33,6 +33,7 @@
 #include <QJsonParseError>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QThread>
 #include <QUrlQuery>
 
 uint qHash(const QPointer<SynoRequest>& req)
@@ -128,6 +129,9 @@ void SynoConn::checkAuth()
 
 SynoRequest* SynoConn::createRequest(const QString& api, const QStringList& formData)
 {
+    // this method should never be called outside of main thread
+    Q_ASSERT(QThread::currentThread() == thread());
+
     QByteArrayList baFormData;
     baFormData.reserve(formData.size());
     std::for_each(formData.cbegin(), formData.cend(), [&](const QString& formEntry) {
@@ -139,7 +143,9 @@ SynoRequest* SynoConn::createRequest(const QString& api, const QStringList& form
 std::shared_ptr<SynoRequest> SynoConn::createRequest(const QByteArray& api,
                                                      const QByteArrayList& formData)
 {
-    return std::make_shared<SynoRequest>(api, formData, this);
+    return std::shared_ptr<SynoRequest>(new SynoRequest(api, formData, this), [](QObject* o) {
+        o->deleteLater();
+    });
 }
 
 void SynoConn::sendRequest(SynoRequest* request)
