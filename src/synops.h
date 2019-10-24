@@ -39,15 +39,32 @@ class SynoPS : public QObject
     Q_PROPERTY(SynoConn* conn READ conn NOTIFY connChanged)
 
 public:
+
+    /*!
+     * \brief This method returns instance of connection object
+     */
     static SynoPS& instance();
     static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
 
+    /*!
+     * \brief This method returns root album
+     *
+     * SynoConn becomes parent of the album object.
+     */
     Q_INVOKABLE SynoAlbum* getRootAlbum();
 
     SynoConn* conn();
 
     static void registerQmlTypes();
 
+    /*!
+     * \brief This method converts variant to string
+     *
+     * In case of variant is byte array, it is assumed to be UTF-8 encoded string.
+     * Otherwise standard conversion is used.
+     *
+     * This method is intended to be used from QML.
+     */
     Q_INVOKABLE static QString toString(const QVariant& value);
 
 protected:

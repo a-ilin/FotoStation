@@ -76,9 +76,16 @@ QNetworkReply* SynoRequest::reply() const
 
 void SynoRequest::setReply(QNetworkReply* reply)
 {
-    Q_ASSERT(!m_reply);
+    if (m_reply) {
+        disconnect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+        m_reply->deleteLater();
+    }
+
     m_reply = reply;
-    connect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+
+    if (m_reply) {
+        connect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+    }
 }
 
 const QByteArray& SynoRequest::replyBody() const

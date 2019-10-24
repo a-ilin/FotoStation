@@ -42,6 +42,7 @@ public:
 
 public:
     explicit SynoAlbum(SynoConn *conn, QObject *parent = nullptr);
+    ~SynoAlbum();
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent) const override;

@@ -106,8 +106,10 @@ void SynoImageResponse::processImage()
     buffer.open(QIODevice::ReadOnly);
     QImageReader reader(&buffer, imageFormat);
     if (!reader.read(&m_image) || m_image.isNull()) {
-        m_errorString = tr("Error on image decoding: %1").arg(reader.errorString());
-        if (m_errorString.isEmpty()) {
+        QString readerError = reader.errorString();
+        if (!readerError.isEmpty()) {
+            m_errorString = tr("Error on image decoding: %1").arg(readerError);
+        } else {
             m_errorString = tr("Unknown error on image decoding");
         }
     }

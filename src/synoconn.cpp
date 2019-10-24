@@ -44,6 +44,11 @@ SynoConn::SynoConn(QObject *parent)
     m_apiPath = QByteArrayLiteral("webapi");
 }
 
+SynoConn::~SynoConn()
+{
+    disconnectFromSyno();
+}
+
 void SynoConn::connectToSyno(const QUrl& synoUrl)
 {
     disconnectFromSyno();
@@ -145,6 +150,7 @@ std::shared_ptr<SynoRequest> SynoConn::createRequest(const QByteArray& api,
 
 void SynoConn::sendRequest(SynoRequest* request)
 {
+    Q_ASSERT(request);
     if (!request) {
         qWarning() << __FUNCTION__ << "nullptr is not allowed";
         return;
@@ -178,12 +184,19 @@ void SynoConn::sendRequest(SynoRequest* request)
         body += QByteArrayLiteral("&SynoToken=") + m_synoToken;
     }
 
-    if (!request->formData().isEmpty()) {
-        body += '&' + request->formData().join('&');
+    for (const QByteArray& formField : std::as_const(request->formData())) {
+        body += '&';
+        body += formField;
+    }
+
+    // invalidate old connection
+    if (QNetworkReply* reply = request->reply()) {
+        QObject::disconnect(reply, nullptr, this, nullptr);
     }
 
     QNetworkReply* reply = m_networkManager.post(request->request(), body);
     request->setReply(reply);
+
     m_pendingRequests.insert(request);
     connect(reply, &QNetworkReply::finished, this, [this, request]() {
         m_pendingRequests.remove(request);
@@ -192,6 +205,7 @@ void SynoConn::sendRequest(SynoRequest* request)
 
 void SynoConn::cancelRequest(SynoRequest* request)
 {
+    Q_ASSERT(request);
     if (!request) {
         qWarning() << __FUNCTION__ << "nullptr is not allowed";
         return;

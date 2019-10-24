@@ -40,20 +40,37 @@ class SynoConn : public QObject
     Q_PROPERTY(QStringList apiList READ apiList NOTIFY apiListChanged)
 
 public:
+
+    /*! This enum identifies the status of connection to the service */
     enum SynoConnStatus
     {
+        /*! No connection was made, or was unsuccessful */
         DISCONNECTED = 0,
+        /*! Socket is connected, and API is loaded */
         API_LOADED = 1,
+        /*! Socket is connected, API is loaded, and user is authorized */
         AUTHORIZED = 2
     };
     Q_ENUM(SynoConnStatus)
 
 public:
     explicit SynoConn(QObject *parent = nullptr);
+    ~SynoConn();
 
     SynoConnStatus status() const;
+
+    /*!
+     * \brief This method returns the status of connection process.
+     *
+     * \returns TRUE when is attempting to connect, FALSE else
+     */
     bool isConnecting() const;
 
+    /*!
+     * \brief Returns list of loaded API
+     *
+     * This method exists for debug purposes only, due to performance impact.
+     */
     QStringList apiList() const;
 
     QString errorString() const;
@@ -63,7 +80,7 @@ public:
      *  \brief Creates request with specified parameters
      *
      *  The caller is responsible for request release.
-     *  This method is intended to be used from QML.
+     *  This method is intended to be used from QML only.
      */
     Q_INVOKABLE SynoRequest* createRequest(const QString& api,
                                            const QStringList& formData);
@@ -100,6 +117,7 @@ private:
 private:
     QString m_errorString;
     QNetworkAccessManager m_networkManager;
+    /*! Set of active requests */
     QSet< QPointer<SynoRequest> > m_pendingRequests;
     /*! Url containing protocol, host name, port, and path to PS */
     QUrl m_synoUrl;

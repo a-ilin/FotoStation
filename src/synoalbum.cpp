@@ -73,6 +73,11 @@ SynoAlbum::SynoAlbum(SynoConn *conn, QObject *parent)
 
 }
 
+SynoAlbum::~SynoAlbum()
+{
+    clear();
+}
+
 QHash<int, QByteArray> SynoAlbum::roleNames() const {
     QHash<int, QByteArray> roles = QAbstractListModel::roleNames();
     roles.insert(RoleSynoData, QByteArrayLiteral("synoData"));

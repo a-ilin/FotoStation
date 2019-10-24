@@ -40,11 +40,10 @@ public:
     Q_INVOKABLE QVariant value(const QString& key) const;
     Q_INVOKABLE void setValue(const QString& key, const QVariant& value);
 
-    /*! Returns true if the application is installed into system directory */
+    /*!
+     * \brief Returns TRUE if the application is installed into system directory
+     */
     static bool isAppInstalled();
-
-    /*! Initialize before the first use */
-    static void initialize();
 
 signals:
     void groupChanged();
