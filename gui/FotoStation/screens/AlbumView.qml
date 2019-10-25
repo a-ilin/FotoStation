@@ -54,7 +54,8 @@ Item {
                 anchors.topMargin: _view.border
                 anchors.bottom: _albumTitle.top
                 anchors.bottomMargin: _view.border
-                image.source: Facade.coverUrlForThumb(model.synoData.id)
+                image.sourceSize.width: width
+                image.source: Facade.coverUrl(model.synoData.id)
             }
 
             Rectangle {

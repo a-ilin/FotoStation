@@ -20,25 +20,34 @@
 #ifndef SYNOIMAGEPROVIDER_P_H
 #define SYNOIMAGEPROVIDER_P_H
 
-#include <QQuickImageResponse>
-
+#include "synoimageprovider.h"
 #include "synorequest.h"
+
+#include <QQuickImageResponse>
 
 class SynoImageResponse : public QQuickImageResponse
 {
 public:
-    SynoImageResponse(const QSize& size);
+    SynoImageResponse(SynoImageProvider* provider, const QByteArray& id, const QSize& size);
 
-    void loadThumb(const QByteArray& id);
+    void load();
 
     QQuickTextureFactory* textureFactory() const override;
     QString errorString() const override;
     void cancel() override;
 
 protected:
-    void processImage();
+    void setErrorString(const QString& err);
+    bool loadFromCache();
+    void sendRequest();
+    void processNetworkRequest();
+    void postProcessImage();
+
+    static QByteArray synoSizeForQSize(const QSize& size);
 
 protected:
+    SynoImageProvider* m_provider;
+    QByteArray m_id;
     QSize m_size;
     QString m_errorString;
     QImage m_image;

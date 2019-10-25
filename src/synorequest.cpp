@@ -77,14 +77,14 @@ QNetworkReply* SynoRequest::reply() const
 void SynoRequest::setReply(QNetworkReply* reply)
 {
     if (m_reply) {
-        disconnect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+        QObject::disconnect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
         m_reply->deleteLater();
     }
 
     m_reply = reply;
 
     if (m_reply) {
-        connect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+        QObject::connect(reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
     }
 }
 
@@ -142,18 +142,20 @@ void SynoRequest::send(QObject* context, std::function<void ()> callback)
 {
     Q_ASSERT(context);
     Q_ASSERT(callback);
-    connect(this, &SynoRequest::finished, context, callback);
+    QObject::disconnect(m_callbackConnection);
+    m_callbackConnection = QObject::connect(this, &SynoRequest::finished, context, callback);
     send();
 }
 
 void SynoRequest::send(QJSValue callback)
 {
-    connect(this, &SynoRequest::finished, [callback]() mutable {
+    QObject::disconnect(m_callbackConnection);
+    m_callbackConnection = QObject::connect(this, &SynoRequest::finished, [callback]() mutable {
         if (callback.isCallable()) {
             QJSValue result = callback.call();
             if (result.isError()) {
                 qWarning() << __FUNCTION__ << tr("Error during JS callback execution: %1")
-                                  .arg(result.toString());
+                              .arg(result.toString());
             }
         } else {
             qWarning() << __FUNCTION__ << tr("JS Callback is not callable");
@@ -166,6 +168,8 @@ void SynoRequest::cancel()
 {
     if (m_conn) {
         if (QThread::currentThread() == m_conn->thread()) {
+            QObject::disconnect(m_callbackConnection);
+            QObject::disconnect(m_reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
             m_conn->cancelRequest(this);
         } else {
             QMetaObject::invokeMethod(this, std::bind(&SynoRequest::cancel, this), Qt::QueuedConnection);
@@ -220,8 +224,8 @@ void SynoRequest::onReplyFinished()
             }
         }
 
-        qDebug() << "Headers: " << m_reply->rawHeaderPairs();
-        qDebug() << "Body: " << m_replyBody;
+        qDebug() << QStringLiteral("Headers: ") << m_reply->rawHeaderPairs();
+        qDebug() << QStringLiteral("Body: ") << m_replyBody;
     } else {
         setErrorString(tr("Network reply was destroyed"));
     }

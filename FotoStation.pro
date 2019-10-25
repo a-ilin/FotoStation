@@ -18,8 +18,13 @@ QML_IMPORT_PATH = gui
 # Additional import path used to resolve QML modules just for Qt Quick Designer
 QML_DESIGNER_IMPORT_PATH = gui
 
-# Use correct value for __cplusplus on MSVC
-msvc: QMAKE_CXXFLAGS += /Zc:__cplusplus
+# MSVC section
+msvc: {
+  # Use STD value for __cplusplus on MSVC
+  QMAKE_CXXFLAGS += /Zc:__cplusplus
+  # Generate ASM output
+  QMAKE_CXXFLAGS += /FAs
+}
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -27,10 +32,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/cache.h \
     src/synoalbum.h \
     src/synoalbumdata.h \
     src/synoconn.h \
     src/synoerror.h \
+    src/synoimagecache.h \
     src/synoimageprovider.h \
     src/synoimageprovider_p.h \
     src/synops.h \
@@ -45,6 +52,7 @@ SOURCES += \
     src/synoalbumdata.cpp \
     src/synoconn.cpp \
     src/synoerror.cpp \
+    src/synoimagecache.cpp \
     src/synoimageprovider.cpp \
     src/synops.cpp \
     src/synoreplyjson.cpp \

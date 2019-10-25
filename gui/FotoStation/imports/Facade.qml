@@ -25,9 +25,9 @@ import FotoStation 1.0
 QtObject {
     id: root
 
-    function coverUrlForThumb(albumId) {
+    function coverUrl(albumId) {
         if (albumId && albumId !== "") {
-            return "image://syno/thumb/" + SynoPS.toString(albumId);
+            return "image://syno/" + SynoPS.toString(albumId);
         }
         return "";
     }

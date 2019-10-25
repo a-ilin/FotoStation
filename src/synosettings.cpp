@@ -18,11 +18,10 @@
 
 #include <QCoreApplication>
 #include <QDir>
-#include <QSettings>
 
 #include "synosettings.h"
 
-SynoSettings::SynoSettings()
+SynoSettings::SynoSettings(const QString& group)
 {
     if (isAppInstalled()) {
         m_settings.reset(new QSettings(QSettings::IniFormat,
@@ -35,6 +34,8 @@ SynoSettings::SynoSettings()
     }
 
     m_settings->setIniCodec("UTF-8");
+
+    setGroup(group);
 }
 
 QString SynoSettings::group() const
@@ -51,9 +52,9 @@ void SynoSettings::setGroup(const QString& group)
     }
 }
 
-QVariant SynoSettings::value(const QString& key) const
+QVariant SynoSettings::value(const QString& key, const QVariant& defaultValue) const
 {
-    return m_settings->value(key);
+    return m_settings->value(key, defaultValue);
 }
 
 void SynoSettings::setValue(const QString& key, const QVariant& value)

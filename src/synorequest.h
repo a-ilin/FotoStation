@@ -91,6 +91,7 @@ private slots:
 
 private:
     QPointer<SynoConn> m_conn;
+    QMetaObject::Connection m_callbackConnection;
     QByteArray m_api;
     QByteArrayList m_formData;
     QNetworkRequest m_request;

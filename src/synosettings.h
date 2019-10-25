@@ -20,11 +20,10 @@
 #define SYNOSETTINGS_H
 
 #include <QObject>
+#include <QSettings>
 #include <QVariant>
 
 #include <memory>
-
-class QSettings;
 
 class SynoSettings : public QObject
 {
@@ -32,12 +31,12 @@ class SynoSettings : public QObject
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 
 public:
-    SynoSettings();
+    SynoSettings(const QString& group = QString());
 
     QString group() const;
     void setGroup(const QString& group);
 
-    Q_INVOKABLE QVariant value(const QString& key) const;
+    Q_INVOKABLE QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const;
     Q_INVOKABLE void setValue(const QString& key, const QVariant& value);
 
     /*!

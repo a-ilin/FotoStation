@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     SynoPS::registerQmlTypes();
-    engine.addImageProvider("syno", new SynoImageProvider());
+    engine.addImageProvider("syno", new SynoImageProvider(SynoPS::instance().conn()));
     engine.addImportPath(GUI_PREFIX_PATH);
 
     populateRootContext(engine.rootContext());
