@@ -124,8 +124,11 @@ QString SynoImageResponse::errorString() const
 
 void SynoImageResponse::cancel()
 {
-    Q_ASSERT(m_req);
-    m_req->cancel();
+    if (m_req) {
+        Q_ASSERT(m_image.isNull());
+        m_req->cancel();
+    }
+
     emit finished();
 }
 

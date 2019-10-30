@@ -16,26 +16,62 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import QtGraphicalEffects 1.0 as QGE
 import QtQuick 2.13
+import QtQuick.Controls 2.13
 
 import FotoStation 1.0
+import FotoStation.assets 1.0
 import FotoStation.widgets 1.0
 
-Item {
+FocusScope {
     id: root
 
     /*! This property holds instance of SynoAlbum */
     property var synoAlbum: null
 
+    focus: true
+
+    MouseArea {
+        anchors.fill: _view
+        onPressed: {
+            _view.focus = true;
+        }
+    }
+
     GridView {
         id: _view
 
         readonly property int border: 1
+        readonly property int visibleItemCount: width * height / cellWidth / cellHeight
 
         anchors.fill: parent
+        anchors.margins: 4
 
         cellWidth: 150
         cellHeight: 120 + _albumTitleMetrics.height + border * 2
+
+        focus: true
+
+        snapMode: GridView.SnapToRow
+
+        ScrollBar.vertical: ScrollBar {
+            active: true
+        }
+
+        Keys.onPressed: {
+            if (event.key === Qt.Key_Home) {
+                currentIndex = 0;
+                event.accepted = true;
+            } else if (event.key === Qt.Key_End) {
+                currentIndex = Math.max(0, count - 1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_PageUp) {
+                currentIndex = Math.max(0, currentIndex - visibleItemCount);
+            } else if (event.key === Qt.Key_PageDown) {
+                currentIndex = Math.min(_view.count - 1, currentIndex + visibleItemCount);
+            }
+        }
 
         model: root.synoAlbum
         delegate: Rectangle {
@@ -59,7 +95,7 @@ Item {
             }
 
             Rectangle {
-                color: "white"
+                color: index === _view.currentIndex ? "lightblue" : "white"
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - _view.border * 2
                 anchors.top: _albumCover.bottom
@@ -75,12 +111,27 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: _albumTitleMetrics.height * maximumLineCount
                 width: parent.width - _view.border * 2
-                text: model.display
+                text: model.display !== "" ? model.display : qsTr("Loading...")
                 elide: _albumTitleMetrics.elide
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    _view.currentIndex = index;
+                    _view.positionViewAtIndex(index, GridView.Contain);
+                }
+            }
+        }
+
+        onCountChanged: {
+            if (currentIndex === -1 && count > 0) {
+                currentIndex = 0;
+                positionViewAtBeginning();
             }
         }
 
@@ -88,6 +139,21 @@ Item {
             id: _albumTitleMetrics
             elide: Qt.ElideRight
             text: "MMM"
+        }
+
+        AnimatedImage {
+            id: _loadingIndicator
+            source: _view.count === 0 ? Assets.animated.roller_64 : ""
+            visible: false
+        }
+
+        QGE.ColorOverlay {
+            anchors.centerIn: parent
+            width: _loadingIndicator.width
+            height: _loadingIndicator.height
+            source: _loadingIndicator
+            color: Assets.colors.iconDefault
+            visible: _loadingIndicator.source !== ""
         }
     }
 

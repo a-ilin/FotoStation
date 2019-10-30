@@ -34,6 +34,7 @@ Item {
         anchors.fill: parent
         fillMode: Image.PreserveAspectCrop
         clip: true
+        smooth: true
     }
 
     FSIcon {
@@ -45,7 +46,7 @@ Item {
 
     AnimatedImage {
         id: _loadingIndicator
-        source: _coverImage.status === Image.Loading ? Assets.animated.roller_32 : ""
+        source: !root.isError && !root.isLoaded ? Assets.animated.roller_32 : ""
         visible: false
     }
 
@@ -55,5 +56,6 @@ Item {
         height: _loadingIndicator.height
         source: _loadingIndicator
         color: Assets.colors.iconDefault
+        visible: _loadingIndicator.source !== ""
     }
 }
