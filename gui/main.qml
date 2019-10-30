@@ -26,8 +26,6 @@ import FotoStation 1.0
 ApplicationWindow {
     id: root
 
-    visible: true
-
     width: 800
     minimumWidth: 640
     height: 600
@@ -63,6 +61,15 @@ ApplicationWindow {
         }
     }
 
+    onClosing: {
+        internal.saveWindowGeometry();
+    }
+
+    SynoSettings {
+        id: _settings
+        group: "main"
+    }
+
     FocusScope {
         anchors.fill: parent
         focus: true
@@ -84,7 +91,7 @@ ApplicationWindow {
         target: SynoPS.conn
         onStatusChanged: {
             if (SynoPS.conn.status === SynoConn.AUTHORIZED) {
-                internal.showAlbumViewForm();
+                internal.showBaseScreenViewForm();
             } else if (SynoPS.conn.status === SynoConn.DISCONNECTED) {
                 internal.showAuthorizationForm();
             }
@@ -97,7 +104,7 @@ ApplicationWindow {
         property var debugWindow: null
 
         readonly property url debugViewUrl: Qt.resolvedUrl("FotoStation/screens/DebugView.qml")
-        readonly property url albumViewUrl: Qt.resolvedUrl("FotoStation/screens/AlbumView.qml")
+        readonly property url baseScreenViewDesktopUrl: Qt.resolvedUrl("FotoStation/screens/BaseScreenViewDesktop.qml")
         readonly property url footerUrl: Qt.resolvedUrl("FotoStation/screens/Footer.qml")
         readonly property url loginViewUrl: Qt.resolvedUrl("FotoStation/screens/LoginView.qml")
 
@@ -105,8 +112,12 @@ ApplicationWindow {
             _loader.setSource(internal.loginViewUrl);
         }
 
-        function showAlbumViewForm() {
-            _loader.setSource(internal.albumViewUrl);
+        function showBaseScreenViewForm() {
+            if (Runtime.isMobile) {
+                // TBD: implement
+            } else {
+                _loader.setSource(internal.baseScreenViewDesktopUrl);
+            }
         }
 
         function showDebugWindow() {
@@ -123,9 +134,33 @@ ApplicationWindow {
                 internal.debugWindow.requestActivate();
             }
         }
+
+        function saveWindowGeometry() {
+            _settings.setValue("windowRect", Qt.rect(root.x, root.y,
+                                                     root.width, root.height));
+            _settings.setValue("isWindowMaximized", root.visibility === Window.Maximized);
+        }
+
+        function restoreWindowGeometry() {
+            if (_settings.contains("windowRect")) {
+                var rect = _settings.value("windowRect");
+                root.x = rect.x;
+                root.y = rect.y;
+                root.width = rect.width;
+                root.height = rect.height;
+            }
+
+            if (_settings.value("isWindowMaximized")) {
+                root.showMaximized();
+            } else {
+                root.showNormal();
+            }
+        }
     }
 
     Component.onCompleted: {
         internal.showAuthorizationForm();
+        internal.restoreWindowGeometry();
+        root.visible = true;
     }
 }

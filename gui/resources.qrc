@@ -24,6 +24,7 @@
         <file>FotoStation/assets/icons/broken_document_256.png</file>
         <file>FotoStation/assets/icons/broken_document_512.png</file>
         <file>FotoStation/screens/AlbumView.qml</file>
+        <file>FotoStation/screens/BaseScreenViewDesktop.qml</file>
         <file>FotoStation/screens/DebugView.qml</file>
     </qresource>
 </RCC>

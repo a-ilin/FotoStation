@@ -31,11 +31,20 @@ static void populateRootContext(QQmlContext* ctx)
     QQmlPropertyMap* runtimeMap = new QQmlPropertyMap(ctx);
     runtimeMap->setObjectName(QStringLiteral("RuntimeObject"));
 
+    // set debug flag
     bool isDebug = QCoreApplication::arguments().contains(QStringLiteral("--debug"));
     if (isDebug) {
         qInfo() << QStringLiteral("Debug mode is enabled");
     }
     runtimeMap->insert(QStringLiteral("isDebug"), isDebug);
+
+    // set mobile flag
+#if defined(Q_OS_ANDROID)
+    bool isMobile = true;
+#else
+    bool isMobile = false;
+#endif
+    runtimeMap->insert(QStringLiteral("isMobile"), isMobile);
 
     ctx->setContextProperty(QStringLiteral("Runtime"), runtimeMap);
 }

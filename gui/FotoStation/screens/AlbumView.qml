@@ -30,12 +30,15 @@ FocusScope {
     /*! This property holds instance of SynoAlbum */
     property var synoAlbum: null
 
+    /*! This property holds id of selected image */
+    readonly property var selectedImageId: _view.currentItem ? _view.currentItem.imageId : null
+
     focus: true
 
     MouseArea {
         anchors.fill: _view
         onPressed: {
-            _view.focus = true;
+            _view.forceActiveFocus();
         }
     }
 
@@ -77,6 +80,8 @@ FocusScope {
         delegate: Rectangle {
             id: _delegate
 
+            readonly property var imageId: model.synoData.id
+
             width: _view.cellWidth - 4
             height: _view.cellHeight - 4
 
@@ -91,7 +96,7 @@ FocusScope {
                 anchors.bottom: _albumTitle.top
                 anchors.bottomMargin: _view.border
                 image.sourceSize.width: width
-                image.source: Facade.coverUrl(model.synoData.id)
+                image.source: Facade.coverUrl(imageId)
             }
 
             Rectangle {
@@ -155,13 +160,5 @@ FocusScope {
             color: Assets.colors.iconDefault
             visible: _loadingIndicator.source !== ""
         }
-    }
-
-    Component.onCompleted: {
-        if (!root.synoAlbum) {
-            root.synoAlbum = SynoPS.getRootAlbum();
-        }
-
-        root.synoAlbum.refresh();
     }
 }

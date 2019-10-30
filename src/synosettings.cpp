@@ -52,9 +52,26 @@ void SynoSettings::setGroup(const QString& group)
     }
 }
 
+bool SynoSettings::contains(const QString& key) const
+{
+    return m_settings->contains(key);
+}
+
 QVariant SynoSettings::value(const QString& key, const QVariant& defaultValue) const
 {
-    return m_settings->value(key, defaultValue);
+    QVariant v = m_settings->value(key, defaultValue);
+
+    // convert "true" and "false" to true and false
+    if (v.type() == QVariant::String) {
+        QString vs = v.toString();
+        if (vs == QStringLiteral("true")) {
+            v = true;
+        } else if (vs == QStringLiteral("false")) {
+            v = false;
+        }
+    }
+
+    return v;
 }
 
 void SynoSettings::setValue(const QString& key, const QVariant& value)

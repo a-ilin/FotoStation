@@ -36,6 +36,7 @@ public:
     QString group() const;
     void setGroup(const QString& group);
 
+    Q_INVOKABLE bool contains(const QString& key) const;
     Q_INVOKABLE QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const;
     Q_INVOKABLE void setValue(const QString& key, const QVariant& value);
 
