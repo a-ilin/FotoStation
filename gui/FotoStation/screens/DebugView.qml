@@ -112,7 +112,7 @@ Window {
                     id: _requestProgressImage
                     height: 16
                     width: 16
-                    source: internal.isAwaitingReply ? Assets.roller_16 : ""
+                    source: internal.isAwaitingReply ? Assets.animated.roller_16 : ""
                 }
             }
         }

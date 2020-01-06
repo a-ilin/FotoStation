@@ -22,15 +22,21 @@ import QtQuick.Controls 1.4 as Controls_1
 import QtQuick.Controls 2.13
 
 import FotoStation 1.0
+import FotoStation.assets 1.0
 import FotoStation.widgets 1.0
 
 FocusScope {
     id: root
 
     /*! This property holds instance of current SynoAlbum */
-    property var synoAlbum: null
+    property alias synoAlbum: _albumView.synoAlbum
 
     focus: true
+
+    Rectangle {
+        anchors.fill: parent
+        color: Assets.appPalette.light
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -59,7 +65,7 @@ FocusScope {
             }
 
             Rectangle {
-                color: "black"
+                color: Assets.appPalette.shadow
 
                 SplitView.preferredHeight: root.height / 2
 
@@ -77,7 +83,13 @@ FocusScope {
 
             SplitView.preferredWidth: root.width * 2 / 3
 
-            synoAlbum: root.synoAlbum
+            Component.onCompleted: {
+                if (!synoAlbum) {
+                    synoAlbum = SynoPS.createAlbumForPath();
+                }
+
+                synoAlbum.refresh();
+            }
         }
     }
 
@@ -89,12 +101,6 @@ FocusScope {
     Component.onCompleted: {
         _mainView.restoreState(_settings.value("splitViewMain"));
         _sideView.restoreState(_settings.value("splitViewSide"));
-
-        if (!root.synoAlbum) {
-            root.synoAlbum = SynoPS.getRootAlbum();
-        }
-
-        root.synoAlbum.refresh();
     }
 
     Component.onDestruction: {

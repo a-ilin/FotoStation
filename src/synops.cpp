@@ -59,15 +59,25 @@ QObject* SynoPS::fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine)
     return synoPS;
 }
 
-SynoAlbum* SynoPS::getRootAlbum()
+SynoAlbum* SynoPS::createAlbumForPath(const QString& path)
 {
-    return new SynoAlbum(conn(), this);
+    return new SynoAlbum(conn(), path);
+}
+
+SynoAlbum* SynoPS::createAlbumForData(const SynoAlbumData& data)
+{
+    return new SynoAlbum(conn(), data);
 }
 
 SynoConn* SynoPS::conn()
 {
     Q_D(SynoPS);
     return &d->conn;
+}
+
+void SynoPS::registerTypes()
+{
+    qRegisterMetaType<SynoAlbumData>();
 }
 
 void SynoPS::registerQmlTypes()

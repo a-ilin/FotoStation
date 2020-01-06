@@ -27,6 +27,7 @@ class QJSEngine;
 class QQmlEngine;
 
 class SynoAlbum;
+struct SynoAlbumData;
 class SynoConn;
 class SynoPSPrivate;
 
@@ -47,14 +48,30 @@ public:
     static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
 
     /*!
-     * \brief This method returns root album
+     * \brief This method returns album for the specified path
      *
-     * SynoConn becomes parent of the album object.
+     * The caller is responsible for album release.
+     *
+     * \param path Path of the album
+     *
+     * \returns Album object
      */
-    Q_INVOKABLE SynoAlbum* getRootAlbum();
+    Q_INVOKABLE SynoAlbum* createAlbumForPath(const QString& path = QString());
+
+    /*!
+     * \brief This method returns album for the specified data
+     *
+     * The caller is responsible for album release.
+     *
+     * \param synoData Data of the album
+     *
+     * \returns Album object
+     */
+    Q_INVOKABLE SynoAlbum* createAlbumForData(const SynoAlbumData& data);
 
     SynoConn* conn();
 
+    static void registerTypes();
     static void registerQmlTypes();
 
     /*!

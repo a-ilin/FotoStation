@@ -22,6 +22,9 @@ QtObject {
     }
 
     readonly property QtObject colors: QtObject {
-        readonly property color iconDefault: "#929292"
+        readonly property color iconDefault: Assets.appPalette.alternateBase
     }
+
+    /*! This property holds reference to application window system palette */
+    property var appPalette: null
 }

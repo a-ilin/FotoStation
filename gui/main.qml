@@ -22,6 +22,7 @@ import QtQuick.Layouts 1.13
 import QtQuick.Window 2.13
 
 import FotoStation 1.0
+import FotoStation.assets 1.0
 
 ApplicationWindow {
     id: root
@@ -168,6 +169,8 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        Assets.appPalette = Qt.binding(function() { return root.palette; });
+
         internal.showAuthorizationForm();
         internal.restoreWindowGeometry();
         root.visible = true;

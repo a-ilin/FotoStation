@@ -128,6 +128,12 @@ void SynoRequest::send()
 {
     if (m_conn) {
         if (QThread::currentThread() == m_conn->thread()) {
+
+#ifdef QT_DEBUG
+            qDebug() << QStringLiteral("RQ:API: ") << m_api;
+            qDebug() << QStringLiteral("RQ:FormData: ") << m_formData;
+#endif
+
             m_conn->sendRequest(this);
         } else {
             QMetaObject::invokeMethod(this, std::bind(qOverload<void>(&SynoRequest::send), this),
@@ -224,8 +230,11 @@ void SynoRequest::onReplyFinished()
             }
         }
 
-        qDebug() << QStringLiteral("Headers: ") << m_reply->rawHeaderPairs();
-        qDebug() << QStringLiteral("Body: ") << m_replyBody;
+#ifdef QT_DEBUG
+        qDebug() << QStringLiteral("RP:Headers: ") << m_reply->rawHeaderPairs();
+        qDebug() << QStringLiteral("RP:Body: ") << m_replyBody;
+#endif
+
     } else {
         setErrorString(tr("Network reply was destroyed"));
     }

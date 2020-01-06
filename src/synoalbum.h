@@ -23,14 +23,17 @@
 
 #include "synoalbumdata.h"
 
+#include <functional>
+
 class SynoConn;
 
 class SynoAlbum : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(SynoAlbumData synoData READ synoData WRITE setSynoData NOTIFY synoDataChanged)
-
+    Q_PROPERTY(SynoAlbumData synoData READ synoData NOTIFY synoDataChanged)
+    Q_PROPERTY(QString path READ path NOTIFY pathChanged)
+    Q_PROPERTY(bool hasParent READ hasParent NOTIFY hasParentChanged)
     Q_PROPERTY(int batchSize READ batchSize WRITE setBatchSize NOTIFY batchSizeChanged)
 
 public:
@@ -41,28 +44,38 @@ public:
     Q_ENUM(SynoAlbumRoles)
 
 public:
-    explicit SynoAlbum(SynoConn *conn, QObject *parent = nullptr);
+    SynoAlbum(SynoConn* conn, const SynoAlbumData& synoData, QObject* parent = nullptr);
+    SynoAlbum(SynoConn* conn, const QString& path, QObject* parent = nullptr);
     ~SynoAlbum();
+
+    /*!
+     * \brief This method returns album data for the specified index.
+     *
+     * \param index Index of the data to be returned
+     *
+     * \returns Album data for the index, or empty data
+     */
+    Q_INVOKABLE SynoAlbumData get(int index) const;
 
     QHash<int, QByteArray> roleNames() const override;
     int rowCount(const QModelIndex& parent) const override;
     QVariant data(const QModelIndex& index, int role) const override;
 
-    Q_INVOKABLE SynoAlbum* getDescendantAlbum(int index);
-
-    QString path() const;
-    void setPath(const QString& path);
-
     int batchSize() const;
     void setBatchSize(int size);
 
     const SynoAlbumData& synoData() const;
-    void setSynoData(const SynoAlbumData& synoData);
+    const QString& path() const;
+    bool hasParent() const;
+
+    static QString normalizedPath(const QString& path);
+    static QByteArray albumIdByPath(const QString& path);
+    static QString pathByAlbumId(const QByteArray& albumId);
 
 signals:
     void synoDataChanged();
     void pathChanged();
-    void offsetChanged();
+    void hasParentChanged();
     void batchSizeChanged();
 
 public slots:
@@ -70,11 +83,9 @@ public slots:
     void refresh();
 
 private:
-    void load(int offset);
-
-    static QString normalizedPath(const QString& path);
-    static QByteArray albumIdByPath(const QString& path);
-    static QString pathByAlbumId(const QByteArray& albumId);
+    void load(int offset, std::function<void(int next, int end)> callbackOnSuccess);
+    void loadIteratively(int next, int end);
+    void loadInfo();
 
 private:
     SynoConn *m_conn;
@@ -82,6 +93,7 @@ private:
     QVector<SynoAlbumData*> m_descendantData;
     QString m_path;
     int m_batchSize;
+    bool m_refreshRequested;
 };
 
 #endif // SYNOALBUM_H

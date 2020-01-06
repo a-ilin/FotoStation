@@ -21,12 +21,19 @@
 #include <QJsonObject>
 #include <QMetaProperty>
 
+const SynoAlbumData SynoAlbumData::null = SynoAlbumData();
+
 static inline
 std::tuple<QSize, int> readThumbInfo(const QJsonObject& albumSizeDataObject) {
     QSize size(albumSizeDataObject[QStringLiteral("resolutionx")].toInt(),
                albumSizeDataObject[QStringLiteral("resolutiony")].toInt());
     int mtime = albumSizeDataObject[QStringLiteral("mtime")].toInt();
     return std::make_tuple(size, mtime);
+}
+
+bool SynoAlbumData::isNull() const
+{
+    return *this == null;
 }
 
 void SynoAlbumData::readFrom(const QJsonObject& albumDataObject)

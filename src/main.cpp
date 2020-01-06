@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
     QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 
     QQmlApplicationEngine engine;
+    SynoPS::registerTypes();
     SynoPS::registerQmlTypes();
     engine.addImageProvider("syno", new SynoImageProvider(SynoPS::instance().conn()));
     engine.addImportPath(GUI_PREFIX_PATH);

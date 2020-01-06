@@ -54,12 +54,16 @@ struct SynoAlbumData
     Q_PROPERTY(QStringList thumbnail_status MEMBER thumbnail_status)
 
 public:
+    Q_INVOKABLE bool isNull() const;
+
     void readFrom(const QJsonObject& albumDataObject);
 
     bool operator==(const SynoAlbumData& o) const;
     bool operator!=(const SynoAlbumData& o) const {
         return !(*this == o);
     }
+
+    static const SynoAlbumData null;
 
 public:
     QByteArray id;
