@@ -144,10 +144,19 @@ ApplicationWindow {
         function restoreWindowGeometry() {
             if (_settings.contains("windowRect")) {
                 var rect = _settings.value("windowRect");
-                root.x = rect.x;
-                root.y = rect.y;
-                root.width = rect.width;
-                root.height = rect.height;
+                root.width = Math.max(root.minimumWidth,
+                                      Math.min(rect.width, root.screen.desktopAvailableWidth));
+                root.height = Math.max(root.minimumHeight,
+                                       Math.min(rect.height, root.screen.desktopAvailableHeight));
+
+                if (rect.y < root.screen.desktopAvailableHeight &&
+                    rect.y + root.height > 0 &&
+                    rect.x < root.screen.desktopAvailableWidth &&
+                    rect.x + root.width > 0) {
+
+                    root.x = rect.x;
+                    root.y = rect.y;
+                }
             }
 
             if (_settings.value("isWindowMaximized")) {
