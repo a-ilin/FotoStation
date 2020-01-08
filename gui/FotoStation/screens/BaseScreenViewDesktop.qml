@@ -84,11 +84,7 @@ FocusScope {
             SplitView.preferredWidth: root.width * 2 / 3
 
             Component.onCompleted: {
-                if (!synoAlbum) {
-                    synoAlbum = SynoPS.createAlbumForPath();
-                }
-
-                synoAlbum.refresh();
+                setAlbumWrapper(SynoAlbumFactory.createAlbumForPath(), true);
             }
         }
     }

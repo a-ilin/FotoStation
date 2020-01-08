@@ -42,7 +42,7 @@ SynoImageProvider::SynoImageProvider(SynoConn* conn)
                     .arg(cache.count()).arg(cache.totalCost() / 1024)
                     .arg(cache.hitCount()).arg(cache.missCount());
     });
-    cacheStatisticTimer->start(30000);
+    cacheStatisticTimer->start(60000);
 }
 
 SynoConn* SynoImageProvider::conn() const

@@ -65,7 +65,7 @@ class SynoReplyJSONFactory : public QObject
 public:
     SynoReplyJSONFactory(QObject* parent = nullptr);
 
-    static QObject* provider(QQmlEngine* engine, QJSEngine* scriptEngine);
+    static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
     Q_INVOKABLE QObject* create(SynoRequest* synoRequest) const;
 };
 

@@ -28,11 +28,11 @@ import FotoStation.widgets 1.0
 FocusScope {
     id: root
 
-    /*! This property holds instance of SynoAlbum */
-    property var synoAlbum: null
-
     /*! This property holds visibility state for toolbar */
     property alias toolBarVisible: _toolbar.visible
+
+    /*! This property holds instance of SynoAlbum */
+    readonly property var synoAlbum: internal.synoAlbumWrapper ? internal.synoAlbumWrapper.object : null
 
     /*! This property holds id of selected image */
     readonly property var selectedImageId: _view.currentItem ? _view.currentItem.imageId : null
@@ -62,6 +62,14 @@ FocusScope {
         default:
             console.warn(qsTr("Unknown item type at index: "), index, synoData);
             break;
+        }
+    }
+
+    /*! This method assigns album wrapper object */
+    function setAlbumWrapper(albumWrapper, needRefresh) {
+        internal.synoAlbumWrapper = albumWrapper;
+        if (albumWrapper.object && needRefresh) {
+            albumWrapper.object.refresh();
         }
     }
 
@@ -238,22 +246,19 @@ FocusScope {
     QtObject {
         id: internal
 
-        function setRootAlbum(album) {
-            root.synoAlbum = album;
-            root.synoAlbum.refresh();
-        }
+        property var synoAlbumWrapper: null
 
         function openAlbum(index) {
             var synoData = root.synoAlbum.get(index);
-            var album = SynoPS.createAlbumForData(synoData);
-            setRootAlbum(album);
+            var albumWrapper = SynoAlbumFactory.createAlbumForData(synoData);
+            root.setAlbumWrapper(albumWrapper, true);
         }
 
         function cdUp() {
             var sepIdx = root.synoAlbum.path.lastIndexOf('/');
             var parentPath = sepIdx !== -1 ? root.synoAlbum.path.slice(0, sepIdx) : "";
-            var album = SynoPS.createAlbumForPath(parentPath);
-            setRootAlbum(album);
+            var albumWrapper = SynoAlbumFactory.createAlbumForPath(parentPath);
+            root.setAlbumWrapper(albumWrapper, true);
         }
     }
 }

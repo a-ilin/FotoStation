@@ -98,7 +98,7 @@ SynoReplyJSONFactory::SynoReplyJSONFactory(QObject* parent)
 {
 }
 
-QObject* SynoReplyJSONFactory::provider(QQmlEngine* engine, QJSEngine* scriptEngine)
+QObject* SynoReplyJSONFactory::fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine)
 {
     Q_UNUSED(engine)
     Q_UNUSED(scriptEngine)

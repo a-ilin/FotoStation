@@ -22,6 +22,7 @@
 #include <QtQml>
 
 #include "synoalbum.h"
+#include "synoalbumfactory.h"
 #include "synoconn.h"
 #include "synorequest.h"
 #include "synoreplyjson.h"
@@ -59,16 +60,6 @@ QObject* SynoPS::fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine)
     return synoPS;
 }
 
-SynoAlbum* SynoPS::createAlbumForPath(const QString& path)
-{
-    return new SynoAlbum(conn(), path);
-}
-
-SynoAlbum* SynoPS::createAlbumForData(const SynoAlbumData& data)
-{
-    return new SynoAlbum(conn(), data);
-}
-
 SynoConn* SynoPS::conn()
 {
     Q_D(SynoPS);
@@ -85,11 +76,12 @@ void SynoPS::registerQmlTypes()
     const char* qmlUrl = "FotoStation";
 
     qmlRegisterSingletonType<SynoPS>(qmlUrl, 1, 0, "SynoPS", SynoPS::fromQmlEngine);
+    qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::fromQmlEngine);
+    qmlRegisterSingletonType<SynoAlbumFactory>(qmlUrl, 1, 0, "SynoAlbumFactory", SynoAlbumFactory::fromQmlEngine);
     qmlRegisterType<SynoSettings>(qmlUrl, 1, 0, "SynoSettings");
     qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
     qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
     qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
-    qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::provider);
 }
 
 QString SynoPS::toString(const QVariant& value)

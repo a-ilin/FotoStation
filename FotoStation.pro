@@ -33,8 +33,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     src/cache.h \
+    src/qmlobjectwrapper.h \
     src/synoalbum.h \
+    src/synoalbumcache.h \
     src/synoalbumdata.h \
+    src/synoalbumfactory.h \
     src/synoconn.h \
     src/synoerror.h \
     src/synoimagecache.h \
@@ -48,8 +51,11 @@ HEADERS += \
 
 SOURCES += \
     src/main.cpp \
+    src/qmlobjectwrapper.cpp \
     src/synoalbum.cpp \
+    src/synoalbumcache.cpp \
     src/synoalbumdata.cpp \
+    src/synoalbumfactory.cpp \
     src/synoconn.cpp \
     src/synoerror.cpp \
     src/synoimagecache.cpp \

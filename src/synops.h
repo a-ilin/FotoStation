@@ -19,15 +19,11 @@
 #ifndef SYNOPS_H
 #define SYNOPS_H
 
-#include <functional>
-
 #include <QObject>
 
 class QJSEngine;
 class QQmlEngine;
 
-class SynoAlbum;
-struct SynoAlbumData;
 class SynoConn;
 class SynoPSPrivate;
 
@@ -47,28 +43,6 @@ public:
     static SynoPS& instance();
     static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
 
-    /*!
-     * \brief This method returns album for the specified path
-     *
-     * The caller is responsible for album release.
-     *
-     * \param path Path of the album
-     *
-     * \returns Album object
-     */
-    Q_INVOKABLE SynoAlbum* createAlbumForPath(const QString& path = QString());
-
-    /*!
-     * \brief This method returns album for the specified data
-     *
-     * The caller is responsible for album release.
-     *
-     * \param synoData Data of the album
-     *
-     * \returns Album object
-     */
-    Q_INVOKABLE SynoAlbum* createAlbumForData(const SynoAlbumData& data);
-
     SynoConn* conn();
 
     static void registerTypes();
@@ -84,13 +58,13 @@ public:
      */
     Q_INVOKABLE static QString toString(const QVariant& value);
 
-protected:
-    explicit SynoPS(QObject *parent = nullptr);
-
 signals:
     // this signal is never emitted, it is added to suppress
     // Qt warning about non-NOTIFYable properties
     void connChanged();
+
+protected:
+    explicit SynoPS(QObject *parent = nullptr);
 };
 
 #endif // SYNOPS_H
