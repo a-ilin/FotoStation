@@ -70,27 +70,21 @@ static inline QString simplified_helper(const QString &str, QChar symbol)
 SynoAlbum::SynoAlbum(SynoConn* conn, const SynoAlbumData& synoData, QObject* parent)
     : QAbstractListModel(parent)
     , m_conn(conn)
-    , m_selfData(synoData)
+    , m_selfData(synoData.isNull() ? nullptr : new SynoAlbumData(synoData))
     , m_path(synoData.path)
-    , m_refreshRequested(false)
+    , m_id(albumIdByPath(m_path))
 {
     SynoSettings settings("performance");
     m_batchSize = qBound(1, settings.value("albumBatchSize", 50).toInt(), std::numeric_limits<int>::max());
 
-    connect(this, &SynoAlbum::synoDataChanged, this, [this]() {
-        if (m_refreshRequested) {
-            refresh();
-        }
-    });
-
-    // TBD: implement path and hasParent change on album move
+    // TBD: implement path, id, hasParent change on album move
 }
 
 SynoAlbum::SynoAlbum(SynoConn *conn, const QString& path, QObject *parent)
     : SynoAlbum(conn, SynoAlbumData::null, parent)
 {
     m_path = path;
-    QTimer::singleShot(0, this, std::bind(&SynoAlbum::loadInfo, this));
+    m_id = albumIdByPath(path);
 }
 
 SynoAlbum::~SynoAlbum()
@@ -115,15 +109,13 @@ int SynoAlbum::rowCount(const QModelIndex& parent) const
 
 QVariant SynoAlbum::data(const QModelIndex& index, int role) const
 {
-    if (!index.isValid() ||
-        index.row() < 0 ||
-        index.row() >= m_descendantData.size()) {
+    if (!index.isValid()) {
         return QVariant();
     }
 
-    SynoAlbumData* pSynoData = m_descendantData[index.row()];
+    SynoAlbumData* pSynoData = const_cast<SynoAlbum*>(this)->getPtr(index.row());
     if (!pSynoData) {
-        return QString();
+        return QVariant();
     }
 
     switch (role) {
@@ -140,33 +132,50 @@ QVariant SynoAlbum::data(const QModelIndex& index, int role) const
 
 SynoAlbumData SynoAlbum::get(int index) const
 {
+    SynoAlbumData* pSynoData = const_cast<SynoAlbum*>(this)->getPtr(index);
+    return pSynoData ? *pSynoData : SynoAlbumData::null;
+}
+
+SynoAlbumData* SynoAlbum::getPtr(int index)
+{
     if (index < 0 || index >= m_descendantData.size()) {
-        return SynoAlbumData::null;
+        return nullptr;
     }
 
-    SynoAlbumData* pSynoData = m_descendantData[index];
-    return *pSynoData;
+    if (!m_descendantData[index]) {
+        // allocate data according to batch size
+        int begin = index - (index % m_batchSize);
+        int end = std::min(begin + m_batchSize, m_descendantData.size());
+        for (int i = begin; i < end; ++i) {
+            if (!m_descendantData[i]) {
+                m_descendantData[i] = new SynoAlbumData();
+            }
+        }
+
+        // send request
+        load(begin);
+    }
+
+    return m_descendantData[index];
 }
 
 void SynoAlbum::clear()
 {
-    beginResetModel();
-    qDeleteAll(m_descendantData);
-    m_descendantData.clear();
-    endResetModel();
-}
-
-void SynoAlbum::refresh()
-{
-    if (!m_selfData.isNull()) {
-        m_refreshRequested = false;
-        loadIteratively(0, 1);
-    } else {
-        m_refreshRequested = true;
+    if (m_descendantData.size()) {
+        resetSize(0);
     }
 }
 
-void SynoAlbum::load(int offset, std::function<void(int next, int end)> callbackOnSuccess)
+void SynoAlbum::refresh(bool force)
+{
+    if (force || !m_selfData || !m_descendantData.size()) {
+        loadInfo();
+        clear();
+        load(0);
+    }
+}
+
+void SynoAlbum::load(int offset)
 {
     QByteArrayList formData;
     formData << QByteArrayLiteral("method=list");
@@ -176,61 +185,42 @@ void SynoAlbum::load(int offset, std::function<void(int next, int end)> callback
     formData << QByteArrayLiteral("limit=") + QByteArray::number(m_batchSize);
     formData << QByteArrayLiteral("recursive=false");
     formData << QByteArrayLiteral("additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location");
-    formData << QByteArrayLiteral("id=") + m_selfData.id;
+    formData << QByteArrayLiteral("id=") + m_id;
 
     std::shared_ptr<SynoRequest> req = m_conn->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Album"), formData);
-    req->send(this, [this, offset, req, callbackOnSuccess] {
+    req->send(this, [this, offset, req] {
         if (req->errorString().isEmpty()) {
             SynoReplyJSON replyJSON(req.get());
+
             int total = replyJSON.dataObject()[QStringLiteral("total")].toInt();
-            if (!total) {
-                return;
+            if (total < 0) {
+                qWarning() << __FUNCTION__ << tr("Negative total value received: ") << total;
+                total = 0;
             }
 
-            if (m_descendantData.size() && m_descendantData.size() != total) {
-                clear();
-                refresh();
-                return;
-            } else if (!m_descendantData.size()) {
-                this->beginInsertRows(QModelIndex(), 0, total - 1);
-                m_descendantData.resize(total);
-                this->endInsertRows();
+            if (m_descendantData.size() != total) {
+                resetSize(total);
             }
 
             QJsonArray items = replyJSON.dataObject()[QStringLiteral("items")].toArray();
-            if (items.size()) {
-                if (offset + items.size() > total) {
-                    qWarning() << QStringLiteral("Too much items received: ") << items.size();
-                    return;
-                }
-
+            if (offset + items.size() <= total) {
                 int i = offset;
                 for (auto iter = items.cbegin(); iter != items.cend(); ++iter, ++i) {
-                    SynoAlbumData* albumData = new SynoAlbumData();
-                    albumData->readFrom(iter->toObject());
-                    delete m_descendantData[i];
-                    m_descendantData[i] = albumData;
-                }
-                emit this->dataChanged(index(offset), index(offset + items.size() - 1));
+                    if (!m_descendantData[i]) {
+                        m_descendantData[i] = new SynoAlbumData();
+                    }
 
-                callbackOnSuccess(offset + items.size(), total);
+                    m_descendantData[i]->readFrom(iter->toObject());
+                }
+
+                emit dataChanged(index(offset), index(offset + items.size() - 1));
             } else {
-                qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(replyJSON.errorString());
+                qWarning() << __FUNCTION__ << tr("Too much items received: ") << items.size();
             }
         } else {
             qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(req->errorString());
         }
     });
-}
-
-void SynoAlbum::loadIteratively(int next, int end)
-{
-    // TBD: implement lazy loading
-    if (next < end) {
-        QTimer::singleShot(0, this, [=]() {
-            load(next, std::bind(&SynoAlbum::loadIteratively, this, std::placeholders::_1, std::placeholders::_2));
-        });
-    }
 }
 
 void SynoAlbum::loadInfo()
@@ -239,7 +229,7 @@ void SynoAlbum::loadInfo()
     formData << QByteArrayLiteral("method=getinfo");
     formData << QByteArrayLiteral("version=1");
     formData << QByteArrayLiteral("additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location");
-    formData << QByteArrayLiteral("id=") + albumIdByPath(m_path);
+    formData << QByteArrayLiteral("id=") + m_id;
 
     std::shared_ptr<SynoRequest> req = m_conn->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Album"), formData);
     req->send(this, [this, req] {
@@ -247,7 +237,8 @@ void SynoAlbum::loadInfo()
             SynoReplyJSON replyJSON(req.get());
             QJsonArray items = replyJSON.dataObject()[QStringLiteral("items")].toArray();
             if (items.size()) {
-                m_selfData.readFrom(items[0].toObject());
+                m_selfData.reset(new SynoAlbumData());
+                m_selfData->readFrom(items[0].toObject());
                 emit synoDataChanged();
             } else {
                 qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(replyJSON.errorString());
@@ -256,6 +247,14 @@ void SynoAlbum::loadInfo()
             qWarning() << __FUNCTION__ << tr("Error during retrieving album data. %1").arg(req->errorString());
         }
     });
+}
+
+void SynoAlbum::resetSize(int size)
+{
+    beginResetModel();
+    qDeleteAll(m_descendantData);
+    m_descendantData.resize(size);
+    endResetModel();
 }
 
 int SynoAlbum::batchSize() const
@@ -273,12 +272,17 @@ void SynoAlbum::setBatchSize(int size)
 
 const SynoAlbumData& SynoAlbum::synoData() const
 {
-    return m_selfData;
+    return m_selfData ? *m_selfData : SynoAlbumData::null;
 }
 
 const QString& SynoAlbum::path() const
 {
     return m_path;
+}
+
+const QByteArray& SynoAlbum::id() const
+{
+    return m_id;
 }
 
 bool SynoAlbum::hasParent() const

@@ -33,7 +33,7 @@ std::tuple<QSize, int> readThumbInfo(const QJsonObject& albumSizeDataObject) {
 
 bool SynoAlbumData::isNull() const
 {
-    return *this == null;
+    return (this == &null) || (*this == null);
 }
 
 void SynoAlbumData::readFrom(const QJsonObject& albumDataObject)

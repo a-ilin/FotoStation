@@ -84,7 +84,7 @@ FocusScope {
             SplitView.preferredWidth: root.width * 2 / 3
 
             Component.onCompleted: {
-                setAlbumWrapper(SynoAlbumFactory.createAlbumForPath(), true);
+                setAlbumWrapper(SynoAlbumFactory.createAlbumForPath());
             }
         }
     }

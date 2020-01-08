@@ -66,11 +66,12 @@ FocusScope {
     }
 
     /*! This method assigns album wrapper object */
-    function setAlbumWrapper(albumWrapper, needRefresh) {
-        internal.synoAlbumWrapper = albumWrapper;
-        if (albumWrapper.object && needRefresh) {
-            albumWrapper.object.refresh();
+    function setAlbumWrapper(albumWrapper, forceRefresh) {
+        if (albumWrapper.object) {
+            albumWrapper.object.refresh(forceRefresh);
         }
+
+        internal.synoAlbumWrapper = albumWrapper;
     }
 
     focus: true
@@ -251,14 +252,14 @@ FocusScope {
         function openAlbum(index) {
             var synoData = root.synoAlbum.get(index);
             var albumWrapper = SynoAlbumFactory.createAlbumForData(synoData);
-            root.setAlbumWrapper(albumWrapper, true);
+            root.setAlbumWrapper(albumWrapper);
         }
 
         function cdUp() {
             var sepIdx = root.synoAlbum.path.lastIndexOf('/');
             var parentPath = sepIdx !== -1 ? root.synoAlbum.path.slice(0, sepIdx) : "";
             var albumWrapper = SynoAlbumFactory.createAlbumForPath(parentPath);
-            root.setAlbumWrapper(albumWrapper, true);
+            root.setAlbumWrapper(albumWrapper);
         }
     }
 }
