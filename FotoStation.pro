@@ -74,3 +74,10 @@ CONFIG(debug, debug|release): {
     DEFINES += GUI_PREFIX_PATH=\"\\\"file:///"$$_PRO_FILE_PWD_"/gui\\\"\"
 }
 
+# Enable keychain by default
+DEFINES += USE_KEYCHAIN
+contains(DEFINES, USE_KEYCHAIN) {
+    !include($$_PRO_FILE_PWD_/3rdParty/qtkeychain/qt5keychain.pri) {
+        error("Submodule qtkeychain not found. Please run command 'git submodule update --init --recursive' to initialize submodules")
+    }
+}

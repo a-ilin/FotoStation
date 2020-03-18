@@ -58,7 +58,7 @@ Item {
             FSTextField {
                 id: _host
                 enabled: !SynoPS.conn.isConnecting
-                text: _settings.value("hostname") || ""
+                text: internal.storedHostName()
             }
 
             Item {
@@ -80,7 +80,7 @@ Item {
             FSTextField {
                 id: _psPath
                 enabled: !SynoPS.conn.isConnecting
-                text: _settings.value("psPath") || "/photo"
+                text: internal.storedPsPath()
             }
 
             Item {
@@ -102,7 +102,7 @@ Item {
             FSTextField {
                 id: _username
                 enabled: !SynoPS.conn.isConnecting
-                text: _settings.value("username") || ""
+                text: internal.storedUsername()
             }
 
             Item {
@@ -126,6 +126,10 @@ Item {
                 enabled: !SynoPS.conn.isConnecting
                 echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
+
+                Component.onCompleted: {
+                    internal.readStoredPassword();
+                }
             }
 
             Item {
@@ -235,6 +239,33 @@ Item {
             _settings.setValue("hostname", _host.text);
             _settings.setValue("psPath", _psPath.text);
             _settings.setValue("username", _username.text);
+            _settings.saveSecure(secureKey(_host.text, _psPath.text, _username.text), _password.text);
+        }
+
+        function storedHostName() {
+            return _settings.value("hostname") || "";
+        }
+
+        function storedPsPath() {
+            return _settings.value("psPath") || "/photo";
+        }
+
+        function storedUsername() {
+            return _settings.value("username") || "";
+        }
+
+        function readStoredPassword() {
+            _settings.readSecure(secureKey(storedHostName(), storedPsPath(), storedUsername()), function(key, password) {
+                // check that form is consistent with initial request, and no password is specified
+                if (_password.text.length === 0
+                        && key === secureKey(_host.text, _psPath.text, _username.text)) {
+                    _password.text = password;
+                }
+            });
+        }
+
+        function secureKey(hostname, psPath, username) {
+            return username + "@" + hostname + "^" + psPath;
         }
 
         readonly property bool isFormValid: !_wrongHostNameLabel.visible &&

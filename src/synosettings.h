@@ -19,6 +19,7 @@
 #ifndef SYNOSETTINGS_H
 #define SYNOSETTINGS_H
 
+#include <QJSValue>
 #include <QObject>
 #include <QSettings>
 #include <QVariant>
@@ -41,6 +42,34 @@ public:
     Q_INVOKABLE void setValue(const QString& key, const QVariant& value);
 
     /*!
+     * \brief Reads data for specified key from secure storage
+     *
+     * \param key Identifier of the data
+     * \param callbackSuccess JS callback to be executed on success. Expected signature: void(string key, string secureValue)
+     * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
+     */
+    Q_INVOKABLE void readSecure(const QString& key, QJSValue callbackSuccess, QJSValue callbackFailure = QJSValue());
+
+    /*!
+     * \brief Writes data for specified key to secure storage
+     *
+     * \param key Identifier of the data
+     * \param secureValue Data to store
+     * \param callbackSuccess JS callback to be executed on success or undefined. Expected signature: void(string key)
+     * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
+     */
+    Q_INVOKABLE void saveSecure(const QString& key, const QString& secureValue, QJSValue callbackSuccess = QJSValue(), QJSValue callbackFailure = QJSValue());
+
+    /*!
+     * \brief Deletes data for specified key from secure storage
+     *
+     * \param key Identifier of the data
+     * \param callbackSuccess JS callback to be executed on success or undefined. Expected signature: void(string key)
+     * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
+     */
+    Q_INVOKABLE void deleteSecure(const QString& key, QJSValue callbackSuccess = QJSValue(), QJSValue callbackFailure = QJSValue());
+
+    /*!
      * \brief Returns TRUE if the application is installed into system directory
      */
     static bool isAppInstalled();
@@ -50,6 +79,7 @@ signals:
 
 private:
     void endGroups();
+    static QString securelyHashedKey(const QString& key);
 
 private:
     std::unique_ptr<QSettings> m_settings;
