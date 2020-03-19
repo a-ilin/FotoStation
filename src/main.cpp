@@ -62,10 +62,12 @@ int main(int argc, char *argv[])
     // ClearType text looks terrible without this
     QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering);
 
+    SynoPS synoPS;
     QQmlApplicationEngine engine;
+
     SynoPS::registerTypes();
     SynoPS::registerQmlTypes();
-    engine.addImageProvider("syno", new SynoImageProvider(SynoPS::instance().conn()));
+    engine.addImageProvider("syno", new SynoImageProvider(synoPS.conn()));
     engine.addImportPath(GUI_PREFIX_PATH);
 
     populateRootContext(engine.rootContext());

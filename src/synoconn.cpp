@@ -217,27 +217,22 @@ void SynoConn::cancelRequest(SynoRequest* request)
         return;
     }
 
-    reply->abort();
     m_pendingRequests.remove(request);
+    reply->abort();
 }
 
 void SynoConn::cancelAllRequests()
 {
-    for (SynoRequest* req : std::as_const(m_pendingRequests)) {
-        if (!req) {
-            qWarning() << __FUNCTION__ << "nullptr discovered, skipping";
-            continue;
-        }
-        QNetworkReply* reply = req->reply();
-        if (!reply) {
-            qWarning() << __FUNCTION__ << "Nothing to cancel, the request has not been sent";
-            return;
-        }
+    QSet< QPointer<SynoRequest> > requests;
+    std::swap(requests, m_pendingRequests);
 
-        reply->abort();
+    for (SynoRequest* req : std::as_const(requests)) {
+        if (req) {
+            if (QNetworkReply* reply = req->reply()) {
+                reply->abort();
+            }
+        }
     }
-
-    m_pendingRequests.clear();
 }
 
 SynoConn::SynoConnStatus SynoConn::status() const

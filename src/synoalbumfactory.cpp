@@ -68,12 +68,12 @@ SynoAlbumFactory::SynoAlbumFactory()
 
 SynoAlbum* SynoAlbumFactory::createRawAlbumForPath(const QString& path)
 {
-    return new SynoAlbum(SynoPS::instance().conn(), path);
+    return new SynoAlbum(SynoPS::instance()->conn(), path);
 }
 
 SynoAlbum* SynoAlbumFactory::createRawAlbumForData(const SynoAlbumData& data)
 {
-    return new SynoAlbum(SynoPS::instance().conn(), data);
+    return new SynoAlbum(SynoPS::instance()->conn(), data);
 }
 
 QmlObjectWrapper* SynoAlbumFactory::wrapFromCache(const QString& path, std::function<SynoAlbum* ()> ctor)

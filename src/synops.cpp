@@ -28,6 +28,8 @@
 #include "synoreplyjson.h"
 #include "synosettings.h"
 
+static SynoPS* g_synoPS = nullptr;
+
 class SynoPSPrivate : public QObjectPrivate
 {
 public:
@@ -39,15 +41,20 @@ public:
     SynoConn conn;
 };
 
-SynoPS::SynoPS(QObject *parent)
-    : QObject(*new SynoPSPrivate(), parent)
+SynoPS::SynoPS()
+    : QObject(*new SynoPSPrivate(), nullptr)
 {
+    g_synoPS = this;
 }
 
-SynoPS& SynoPS::instance()
+SynoPS::~SynoPS()
 {
-    static SynoPS synoPs;
-    return synoPs;
+    g_synoPS = nullptr;
+}
+
+SynoPS* SynoPS::instance()
+{
+    return g_synoPS;
 }
 
 QObject* SynoPS::fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine)
@@ -55,7 +62,7 @@ QObject* SynoPS::fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine)
     Q_UNUSED(engine)
     Q_UNUSED(scriptEngine)
 
-    SynoPS* synoPS = &SynoPS::instance();
+    SynoPS* synoPS = SynoPS::instance();
     QQmlEngine::setObjectOwnership(synoPS, QQmlEngine::CppOwnership);
     return synoPS;
 }
@@ -98,4 +105,3 @@ QString SynoPS::toString(const QVariant& value)
     // use general conversion
     return value.toString();
 }
-

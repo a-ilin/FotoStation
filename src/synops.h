@@ -40,7 +40,7 @@ public:
     /*!
      * \brief This method returns instance of connection object
      */
-    static SynoPS& instance();
+    static SynoPS* instance();
     static QObject* fromQmlEngine(QQmlEngine* engine, QJSEngine* scriptEngine);
 
     SynoConn* conn();
@@ -58,13 +58,17 @@ public:
      */
     Q_INVOKABLE static QString toString(const QVariant& value);
 
+    ~SynoPS();
+
 signals:
     // this signal is never emitted, it is added to suppress
     // Qt warning about non-NOTIFYable properties
     void connChanged();
 
 protected:
-    explicit SynoPS(QObject *parent = nullptr);
+    SynoPS();
+
+    friend int main(int, char**);
 };
 
 #endif // SYNOPS_H
