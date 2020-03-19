@@ -88,6 +88,15 @@ ApplicationWindow {
         }
     }
 
+    Loader {
+        id: _overlayManager
+        anchors.fill: parent
+
+        Component.onCompleted: {
+            setSource(internal.overlayManagerUrl);
+        }
+    }
+
     Connections {
         target: SynoPS.conn
         onStatusChanged: {
@@ -108,6 +117,7 @@ ApplicationWindow {
         readonly property url baseScreenViewDesktopUrl: Qt.resolvedUrl("FotoStation/screens/BaseScreenViewDesktop.qml")
         readonly property url footerUrl: Qt.resolvedUrl("FotoStation/screens/Footer.qml")
         readonly property url loginViewUrl: Qt.resolvedUrl("FotoStation/screens/LoginView.qml")
+        readonly property url overlayManagerUrl: Qt.resolvedUrl("FotoStation/globals/OverlayManager.qml")
 
         function showAuthorizationForm() {
             _loader.setSource(internal.loginViewUrl);

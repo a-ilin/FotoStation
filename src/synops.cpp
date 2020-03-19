@@ -27,6 +27,7 @@
 #include "synorequest.h"
 #include "synoreplyjson.h"
 #include "synosettings.h"
+#include "synosslconfig.h"
 
 static SynoPS* g_synoPS = nullptr;
 
@@ -89,6 +90,7 @@ void SynoPS::registerQmlTypes()
     qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
     qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
     qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
+    qmlRegisterUncreatableType<SynoSslConfig>(qmlUrl, 1, 0, "SynoConn", "");
 }
 
 QString SynoPS::toString(const QVariant& value)

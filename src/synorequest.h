@@ -38,6 +38,7 @@ class SynoRequest : public QObject
     Q_PROPERTY(QMimeType contentMimeType READ contentMimeType NOTIFY contentTypeChanged)
     Q_PROPERTY(ContentType contentType READ contentType NOTIFY contentTypeChanged)
     Q_PROPERTY(QString errorString READ errorString WRITE setErrorString NOTIFY errorStringChanged)
+    Q_PROPERTY(bool isIntrusive READ isIntrusive WRITE setIsIntrusive NOTIFY isIntrusiveChanged)
 
 public:
     enum ContentType
@@ -67,6 +68,9 @@ public:
     QString errorString() const;
     void setErrorString(const QString& err);
 
+    bool isIntrusive() const;
+    void setIsIntrusive(bool value);
+
     const QByteArray& contentMimeTypeRaw() const;
     QMimeType contentMimeType() const;
     ContentType contentType() const;
@@ -81,6 +85,7 @@ public slots:
 signals:
     void contentTypeChanged();
     void errorStringChanged();
+    void isIntrusiveChanged();
     void finished();
 
 private:
@@ -102,6 +107,7 @@ private:
     ContentType m_contentType;
     QByteArray m_contentEncoding;
     QByteArray m_replyBody;
+    bool m_intrusive;
 };
 
 #endif // SYNOREPLY_H

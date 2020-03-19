@@ -1,0 +1,3 @@
+module globals
+OverlayManager 1.0 OverlayManager.qml
+SslExceptionsPopup 1.0 SslExceptionsPopup.qml

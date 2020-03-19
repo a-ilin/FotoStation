@@ -20,6 +20,7 @@
 #include "synoerror.h"
 #include "synoreplyjson.h"
 #include "synorequest.h"
+#include "synosslconfig.h"
 #include "synotraits.h"
 
 #include <QDebug>
@@ -31,15 +32,14 @@
 #include <QThread>
 #include <QUrlQuery>
 
-uint qHash(const QPointer<SynoRequest>& req)
-{
-    return reinterpret_cast<uint>(req.data());
-}
+#include <functional>
+
 
 SynoConn::SynoConn(QObject *parent)
     : QObject(parent)
     , m_status(SynoConn::DISCONNECTED)
     , m_isConnecting(false)
+    , m_sslConfig(new SynoSslConfig(&m_networkManager, this))
 {
     m_apiPath = QByteArrayLiteral("webapi");
 }
@@ -52,15 +52,23 @@ SynoConn::~SynoConn()
 void SynoConn::connectToSyno(const QUrl& synoUrl)
 {
     disconnectFromSyno();
+
+    m_sslConfig->clearErrors();
     setIsConnecting(true);
-    m_synoUrl = synoUrl;
+
+    if (m_synoUrl != synoUrl) {
+        m_synoUrl = synoUrl;
+        emit synoUrlChanged();
+    }
+
     if (synoUrl.scheme() == QStringLiteral("https")) {
-#ifndef QT_NO_SSL
-        m_networkManager.connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
-#else
-        setErrorString(tr("Cannot use encrypted connection: SSL not available."));
-        return;
-#endif
+        if (m_sslConfig->isSslAvailable()) {
+            m_sslConfig->connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
+        } else {
+            setErrorString(tr("Cannot use encrypted connection: SSL not available."));
+            setIsConnecting(false);
+            return;
+        }
     } else {
         m_networkManager.connectToHost(synoUrl.host(), static_cast<quint16>(synoUrl.port(80)));
     }
@@ -198,9 +206,7 @@ void SynoConn::sendRequest(SynoRequest* request)
     request->setReply(reply);
 
     m_pendingRequests.insert(request);
-    connect(reply, &QNetworkReply::finished, this, [this, request]() {
-        m_pendingRequests.remove(request);
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&SynoConn::onReplyFinished, this, request));
 }
 
 void SynoConn::cancelRequest(SynoRequest* request)
@@ -223,14 +229,12 @@ void SynoConn::cancelRequest(SynoRequest* request)
 
 void SynoConn::cancelAllRequests()
 {
-    QSet< QPointer<SynoRequest> > requests;
+    QSet< SynoRequest* > requests;
     std::swap(requests, m_pendingRequests);
 
     for (SynoRequest* req : std::as_const(requests)) {
-        if (req) {
-            if (QNetworkReply* reply = req->reply()) {
-                reply->abort();
-            }
+        if (QNetworkReply* reply = req->reply()) {
+            reply->abort();
         }
     }
 }
@@ -255,6 +259,11 @@ QStringList SynoConn::apiList() const
     return apiList;
 }
 
+QUrl SynoConn::synoUrl() const
+{
+    return m_synoUrl;
+}
+
 QString SynoConn::errorString() const
 {
     return m_errorString;
@@ -266,6 +275,11 @@ void SynoConn::setErrorString(const QString& err)
         m_errorString = err;
         emit errorStringChanged();
     }
+}
+
+SynoSslConfig* SynoConn::sslConfig() const
+{
+    return m_sslConfig;
 }
 
 QString SynoConn::apiPath(const QByteArray& api) const
@@ -346,5 +360,36 @@ void SynoConn::setIsConnecting(bool status)
     if (status != m_isConnecting) {
         m_isConnecting = status;
         emit isConnectingChanged();
+    }
+}
+
+void SynoConn::onReplyFinished(SynoRequest* request)
+{
+    m_pendingRequests.remove(request);
+
+    QNetworkReply* reply = request->reply();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        switch (reply->error()) {
+        // fatal network layer errors:
+        case QNetworkReply::ConnectionRefusedError:
+        case QNetworkReply::RemoteHostClosedError:
+        case QNetworkReply::HostNotFoundError:
+        case QNetworkReply::TimeoutError:
+        case QNetworkReply::SslHandshakeFailedError:
+        case QNetworkReply::NetworkSessionFailedError:
+        case QNetworkReply::BackgroundRequestNotAllowedError:
+        case QNetworkReply::UnknownNetworkError:
+        // fatal proxy errors:
+        case QNetworkReply::ProxyConnectionRefusedError:
+        case QNetworkReply::ProxyConnectionClosedError:
+        case QNetworkReply::ProxyNotFoundError:
+        case QNetworkReply::ProxyTimeoutError:
+        case QNetworkReply::ProxyAuthenticationRequiredError:
+        case QNetworkReply::UnknownProxyError:
+            qWarning() << __FUNCTION__ << "Network fatal error:" << reply->error();
+            disconnectFromSyno();
+            break;
+        }
     }
 }

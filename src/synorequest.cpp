@@ -33,6 +33,7 @@ SynoRequest::SynoRequest(const QByteArray& api, const QByteArrayList& formData, 
     , m_formData(formData)
     , m_reply(nullptr)
     , m_contentType(UNKNOWN)
+    , m_intrusive(false)
 {
     Q_ASSERT(conn);
 
@@ -104,6 +105,19 @@ void SynoRequest::setErrorString(const QString& err)
     emit errorStringChanged();
 }
 
+bool SynoRequest::isIntrusive() const
+{
+    return m_intrusive;
+}
+
+void SynoRequest::setIsIntrusive(bool value)
+{
+    if (value != m_intrusive) {
+        m_intrusive = value;
+        emit isIntrusiveChanged();
+    }
+}
+
 const QByteArray& SynoRequest::contentMimeTypeRaw() const
 {
     return m_contentMimeTypeRaw;
@@ -141,6 +155,7 @@ void SynoRequest::send()
         }
     } else {
         setErrorString(tr("Cannot send request. Connection object was destroyed or not set."));
+        emit finished();
     }
 }
 
@@ -217,27 +232,31 @@ void SynoRequest::parseContentType()
 
 void SynoRequest::onReplyFinished()
 {
-    if (m_reply) {
-        if (m_reply->size()) {
-            m_replyBody = m_reply->readAll();
-            m_reply->close();
-            parseContentType();
-        } else {
-            if (QNetworkReply::NoError != m_reply->error()) {
-                setErrorString(tr("Network error: %1").arg(m_reply->errorString()));
+    if (QNetworkReply::NoError != m_reply->error()) {
+        if (QNetworkReply::TemporaryNetworkFailureError == m_reply->error()) {
+            if (m_intrusive) {
+                setErrorString(tr("Network error: %1. Intrusive request would not be resent.").arg(m_reply->errorString()));
             } else {
-                setErrorString(tr("Unknown network error"));
+                // send request again
+                setReply(nullptr);
+                send();
+                return;
             }
+        } else {
+            setErrorString(tr("Network error: %1").arg(m_reply->errorString()));
         }
+    } else if (!m_reply->size()) {
+        setErrorString(tr("Unknown network error"));
+    } else {
+        m_replyBody = m_reply->readAll();
+        m_reply->close();
+        parseContentType();
+    }
 
 #ifdef QT_DEBUG
-        qDebug() << QStringLiteral("RP:Headers: ") << m_reply->rawHeaderPairs();
-        qDebug() << QStringLiteral("RP:Body: ") << m_replyBody;
+    qDebug() << QStringLiteral("RP:Headers: ") << m_reply->rawHeaderPairs();
+    qDebug() << QStringLiteral("RP:Body: ") << m_replyBody;
 #endif
-
-    } else {
-        setErrorString(tr("Network reply was destroyed"));
-    }
 
     emit finished();
 }

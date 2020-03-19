@@ -25,6 +25,9 @@ import FotoStation 1.0
 QtObject {
     id: root
 
+    /*! This property holds OverlayManager instance */
+    property var overlayManager: null
+
     function coverUrl(albumId) {
         if (albumId && albumId !== "") {
             return "image://syno/" + SynoPS.toString(albumId);

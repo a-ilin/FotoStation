@@ -26,5 +26,8 @@
         <file>FotoStation/screens/AlbumView.qml</file>
         <file>FotoStation/screens/BaseScreenViewDesktop.qml</file>
         <file>FotoStation/screens/DebugView.qml</file>
+        <file>FotoStation/globals/OverlayManager.qml</file>
+        <file>FotoStation/globals/qmldir</file>
+        <file>FotoStation/globals/SslExceptionsPopup.qml</file>
     </qresource>
 </RCC>

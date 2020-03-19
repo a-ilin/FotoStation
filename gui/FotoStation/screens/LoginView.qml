@@ -150,10 +150,10 @@ Item {
 
             CheckBox {
                 id: _secureConnection
-                enabled: !SynoPS.conn.isConnecting
+                enabled: !SynoPS.conn.isConnecting && SynoPS.conn.sslConfig.isSslAvailable
 
                 text: qsTr("Secure connection")
-                checkState: Qt.Checked
+                checkState: SynoPS.conn.sslConfig.isSslAvailable ? Qt.Checked : Qt.Unchecked
             }
 
             Item {
@@ -163,7 +163,9 @@ Item {
 
             Label {
                 id: _unsecureConnectionLabel
-                text: qsTr("Always use secure connection\nwhen accessing PhotoStation over Internet")
+                text: SynoPS.conn.sslConfig.isSslAvailable
+                      ? qsTr("Always use secure connection\nwhen accessing PhotoStation over Internet")
+                      : qsTr("SSL is not available. Always use secure connection\nwhen accessing PhotoStation over Internet")
                 color: 'red'
                 visible: _secureConnection.checkState !== Qt.Checked
             }
@@ -198,9 +200,7 @@ Item {
                 text: qsTr("Connect")
 
                 onClicked: {
-                    var scheme = _secureConnection.checked ? "https://" : "http://";
-                    var url = scheme + _host.text + "/" + _psPath.text;
-                    SynoPS.conn.connectToSyno(url);
+                    internal.connectToSyno();
                 }
             }
 
@@ -232,8 +232,23 @@ Item {
         }
     }
 
+    Connections {
+        target: SynoPS.conn.sslConfig
+        onConfirmedSslExceptions: {
+            if (internal.isFormValid) {
+                internal.connectToSyno();
+            }
+        }
+    }
+
     QtObject {
         id: internal
+
+        function connectToSyno() {
+            var scheme = _secureConnection.checked ? "https://" : "http://";
+            var url = scheme + _host.text + "/" + _psPath.text;
+            SynoPS.conn.connectToSyno(url);
+        }
 
         function saveCredentials() {
             _settings.setValue("hostname", _host.text);

@@ -28,16 +28,19 @@
 #include <QUrl>
 
 class SynoRequest;
+class SynoSslConfig;
 
 class SynoConn : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(SynoConn)
 
+    Q_PROPERTY(QUrl synoUrl READ synoUrl NOTIFY synoUrlChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
     Q_PROPERTY(SynoConnStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(bool isConnecting READ isConnecting NOTIFY isConnectingChanged)
     Q_PROPERTY(QStringList apiList READ apiList NOTIFY apiListChanged)
+    Q_PROPERTY(SynoSslConfig* sslConfig READ sslConfig NOTIFY sslConfigChanged)
 
 public:
 
@@ -47,9 +50,9 @@ public:
         /*! No connection was made, or was unsuccessful */
         DISCONNECTED = 0,
         /*! Socket is connected, and API is loaded */
-        API_LOADED = 1,
+        API_LOADED,
         /*! Socket is connected, API is loaded, and user is authorized */
-        AUTHORIZED = 2
+        AUTHORIZED
     };
     Q_ENUM(SynoConnStatus)
 
@@ -73,8 +76,12 @@ public:
      */
     QStringList apiList() const;
 
+    QUrl synoUrl() const;
+
     QString errorString() const;
     void setErrorString(const QString& err);
+
+    SynoSslConfig* sslConfig() const;
 
     /*!
      *  \brief Creates request with specified parameters
@@ -94,10 +101,12 @@ public:
                                                            const QByteArrayList& formData);
 
 signals:
+    void synoUrlChanged();
     void errorStringChanged();
     void statusChanged();
     void isConnectingChanged();
     void apiListChanged();
+    void sslConfigChanged();
 
 public slots:
     void connectToSyno(const QUrl& synoUrl);
@@ -113,12 +122,13 @@ private:
     void populateApiMap();
     void setStatus(SynoConnStatus status);
     void setIsConnecting(bool status);
+    void onReplyFinished(SynoRequest* request);
 
 private:
     QString m_errorString;
     QNetworkAccessManager m_networkManager;
     /*! Set of active requests */
-    QSet< QPointer<SynoRequest> > m_pendingRequests;
+    QSet< SynoRequest* > m_pendingRequests;
     /*! Url containing protocol, host name, port, and path to PS */
     QUrl m_synoUrl;
     /*! Map of API query to API path */
@@ -130,8 +140,8 @@ private:
     bool m_isConnecting;
     /*! Session token */
     QByteArray m_synoToken;
+    /*! SSL config */
+    SynoSslConfig* m_sslConfig;
 };
-
-uint qHash(const QPointer<SynoRequest>& req);
 
 #endif // SYNOCONN_H
