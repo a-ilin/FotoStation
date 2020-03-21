@@ -25,8 +25,20 @@ import FotoStation 1.0
 QtObject {
     id: root
 
+    /*! This property holds status when automatic login is allowed */
+    property bool autoLoginAllowed: true
+
+    /*! This property holds last used connection URL */
+    property url lastUsedSynoUrl
+
     /*! This property holds OverlayManager instance */
     property var overlayManager: null
+
+    /*! This property holds status of network connection */
+    readonly property bool isConnecting: ([SynoConn.ATTEMPT_API].indexOf(SynoPS.conn.status) !== -1)
+                                         || ([SynoAuth.ATTEMPT_COOKIE,
+                                              SynoAuth.ATTEMPT_USER].indexOf(SynoPS.conn.auth.status) !== -1)
+                                         || autoLoginAllowed
 
     function coverUrl(albumId) {
         if (albumId && albumId !== "") {

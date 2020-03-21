@@ -26,9 +26,8 @@ import FotoStation.assets 1.0
 Rectangle {
     id: root
 
-    implicitHeight: Math.max(_connectionProgressImage.height, _fm.height)
-                    + internal.borderMargin * 2 + _underline.height
-    implicitWidth: parent.width
+    /*! This property holds margin around borders */
+    property int borderMargin
 
     color: palette.button
 
@@ -45,20 +44,20 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.left
         anchors.bottom: parent.bottom
-        anchors.margins: internal.borderMargin
+        anchors.margins: root.borderMargin
 
-        spacing: internal.borderMargin
+        spacing: root.borderMargin
 
         AnimatedImage {
             id: _connectionProgressImage
             height: 16
             width: 16
-            source: SynoPS.conn.isConnecting ? Assets.animated.roller_16 : ""
+            source: Facade.isConnecting ? Assets.animated.roller_16 : ""
         }
 
         Rectangle {
             height: root.height
-            y: -internal.borderMargin
+            y: -root.borderMargin
             width: 1
             color: internal.borderColor
         }
@@ -71,10 +70,10 @@ Rectangle {
             width: root.width * 0.25
 
             text: {
-                if (SynoPS.conn.isConnecting) {
-                    return qsTr("Connecting");
-                } else if(SynoPS.conn.status === SynoConn.AUTHORIZED) {
-                    return qsTr("Logged in");
+                if (Facade.isConnecting) {
+                    return qsTr("Connecting...");
+                } else if(SynoPS.conn.auth.status === SynoAuth.AUTHORIZED) {
+                    return qsTr("Logged in as: %1").arg(SynoPS.conn.auth.username);
                 } else {
                     return qsTr("Not connected");
                 }
@@ -83,21 +82,15 @@ Rectangle {
 
         Rectangle {
             height: root.height
-            y: -internal.borderMargin
+            y: -root.borderMargin
             width: 1
             color: internal.borderColor
         }
-    }
-
-    TextMetrics {
-        id: _fm
-        text: "M"
     }
 
     QtObject {
         id: internal
 
         readonly property string borderColor: palette.mid
-        readonly property int borderMargin: _fm.height * 0.3
     }
 }

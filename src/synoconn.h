@@ -27,6 +27,7 @@
 #include <QSet>
 #include <QUrl>
 
+class SynoAuth;
 class SynoRequest;
 class SynoSslConfig;
 
@@ -38,9 +39,9 @@ class SynoConn : public QObject
     Q_PROPERTY(QUrl synoUrl READ synoUrl NOTIFY synoUrlChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorStringChanged)
     Q_PROPERTY(SynoConnStatus status READ status NOTIFY statusChanged)
-    Q_PROPERTY(bool isConnecting READ isConnecting NOTIFY isConnectingChanged)
     Q_PROPERTY(QStringList apiList READ apiList NOTIFY apiListChanged)
     Q_PROPERTY(SynoSslConfig* sslConfig READ sslConfig NOTIFY sslConfigChanged)
+    Q_PROPERTY(SynoAuth* auth READ auth NOTIFY authChanged)
 
 public:
 
@@ -48,26 +49,17 @@ public:
     enum SynoConnStatus
     {
         /*! No connection was made, or was unsuccessful */
-        DISCONNECTED = 0,
-        /*! Socket is connected, and API is loaded */
-        API_LOADED,
-        /*! Socket is connected, API is loaded, and user is authorized */
-        AUTHORIZED
+        NONE = 0,
+        /*! Attempting API loading */
+        ATTEMPT_API,
+        /*! API is loaded */
+        API_LOADED
     };
     Q_ENUM(SynoConnStatus)
 
 public:
     explicit SynoConn(QObject *parent = nullptr);
     ~SynoConn();
-
-    SynoConnStatus status() const;
-
-    /*!
-     * \brief This method returns the status of connection process.
-     *
-     * \returns TRUE when is attempting to connect, FALSE else
-     */
-    bool isConnecting() const;
 
     /*!
      * \brief Returns list of loaded API
@@ -76,12 +68,11 @@ public:
      */
     QStringList apiList() const;
 
-    QUrl synoUrl() const;
-
-    QString errorString() const;
-    void setErrorString(const QString& err);
-
+    SynoConnStatus status() const;
+    const QUrl& synoUrl() const;
+    const QString& errorString() const;
     SynoSslConfig* sslConfig() const;
+    SynoAuth* auth() const;
 
     /*!
      *  \brief Creates request with specified parameters
@@ -104,24 +95,24 @@ signals:
     void synoUrlChanged();
     void errorStringChanged();
     void statusChanged();
-    void isConnectingChanged();
     void apiListChanged();
     void sslConfigChanged();
+    void authChanged();
 
 public slots:
     void connectToSyno(const QUrl& synoUrl);
     void disconnectFromSyno();
-    void authorize(const QString& username, const QString& password);
-    void checkAuth();
+
     void sendRequest(SynoRequest* request);
     void cancelRequest(SynoRequest* request);
     void cancelAllRequests();
 
 private:
+    void setErrorString(const QString& err);
     QString apiPath(const QByteArray& api) const;
-    void populateApiMap();
+    void sendApiMapRequest();
+    bool processApiMapReply(const SynoRequest* req);
     void setStatus(SynoConnStatus status);
-    void setIsConnecting(bool status);
     void onReplyFinished(SynoRequest* request);
 
 private:
@@ -137,9 +128,8 @@ private:
     QString m_apiPath;
     /*! Connection status */
     SynoConnStatus m_status;
-    bool m_isConnecting;
-    /*! Session token */
-    QByteArray m_synoToken;
+    /*! Authorization handler */
+    SynoAuth* m_auth;
     /*! SSL config */
     SynoSslConfig* m_sslConfig;
 };

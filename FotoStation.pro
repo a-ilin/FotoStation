@@ -38,6 +38,7 @@ HEADERS += \
     src/synoalbumcache.h \
     src/synoalbumdata.h \
     src/synoalbumfactory.h \
+    src/synoauth.h \
     src/synoconn.h \
     src/synoerror.h \
     src/synoimagecache.h \
@@ -57,6 +58,7 @@ SOURCES += \
     src/synoalbumcache.cpp \
     src/synoalbumdata.cpp \
     src/synoalbumfactory.cpp \
+    src/synoauth.cpp \
     src/synoconn.cpp \
     src/synoerror.cpp \
     src/synoimagecache.cpp \

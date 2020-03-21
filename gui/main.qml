@@ -57,13 +57,23 @@ ApplicationWindow {
     }
 
     footer: Loader {
+        readonly property int borderMargin: _fm.height * 0.3
+
+        height: Math.max(16, _fm.height) + borderMargin * 2 + 1
+        width: parent.width
+
         Component.onCompleted: {
-            setSource(internal.footerUrl);
+            setSource(internal.footerUrl, { borderMargin: borderMargin });
         }
     }
 
     onClosing: {
         internal.saveWindowGeometry();
+    }
+
+    TextMetrics {
+        id: _fm
+        text: "M"
     }
 
     SynoSettings {
@@ -85,6 +95,12 @@ ApplicationWindow {
         Loader {
             id: _loader
             anchors.fill: parent
+
+            function showForm(formSource) {
+                if (source !== formSource) {
+                    source = formSource;
+                }
+            }
         }
     }
 
@@ -100,11 +116,14 @@ ApplicationWindow {
     Connections {
         target: SynoPS.conn
         onStatusChanged: {
-            if (SynoPS.conn.status === SynoConn.AUTHORIZED) {
-                internal.showBaseScreenViewForm();
-            } else if (SynoPS.conn.status === SynoConn.DISCONNECTED) {
-                internal.showAuthorizationForm();
-            }
+            internal.processConnectionStatusChange();
+        }
+    }
+
+    Connections {
+        target: SynoPS.conn.auth
+        onStatusChanged: {
+            internal.processConnectionStatusChange();
         }
     }
 
@@ -120,14 +139,14 @@ ApplicationWindow {
         readonly property url overlayManagerUrl: Qt.resolvedUrl("FotoStation/globals/OverlayManager.qml")
 
         function showAuthorizationForm() {
-            _loader.setSource(internal.loginViewUrl);
+            _loader.showForm(internal.loginViewUrl);
         }
 
         function showBaseScreenViewForm() {
             if (Runtime.isMobile) {
                 // TBD: implement
             } else {
-                _loader.setSource(internal.baseScreenViewDesktopUrl);
+                _loader.showForm(internal.baseScreenViewDesktopUrl);
             }
         }
 
@@ -174,6 +193,15 @@ ApplicationWindow {
                 root.showMaximized();
             } else {
                 root.showNormal();
+            }
+        }
+
+        function processConnectionStatusChange() {
+            if (SynoPS.conn.status === SynoConn.API_LOADED
+                && SynoPS.conn.auth.status === SynoAuth.AUTHORIZED) {
+                internal.showBaseScreenViewForm();
+            } else if (SynoPS.conn.status === SynoConn.NONE) {
+                internal.showAuthorizationForm();
             }
         }
     }

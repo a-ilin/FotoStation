@@ -57,8 +57,7 @@ Item {
 
             FSTextField {
                 id: _host
-                enabled: !SynoPS.conn.isConnecting
-                text: internal.storedHostName()
+                enabled: !Facade.isConnecting
             }
 
             Item {
@@ -68,9 +67,8 @@ Item {
 
             Label {
                 id: _wrongHostNameLabel
-                text: qsTr("Enter host name or IP")
+                text: !Facade.isConnecting && !internal.isHostNameValid ? qsTr("Enter host name or IP") : ""
                 color: 'red'
-                visible: _host.text.length === 0
             }
 
             Label {
@@ -79,8 +77,9 @@ Item {
 
             FSTextField {
                 id: _psPath
-                enabled: !SynoPS.conn.isConnecting
-                text: internal.storedPsPath()
+                // default path
+                text: "/photo"
+                enabled: !Facade.isConnecting
             }
 
             Item {
@@ -90,9 +89,8 @@ Item {
 
             Label {
                 id: _wrongPsPathLabel
-                text: qsTr("Enter PhotoStation path")
+                text: !Facade.isConnecting && !internal.isPsPathValid ? qsTr("Enter PhotoStation path (default is '/photo')") : ""
                 color: 'red'
-                visible: _psPath.text.length === 0
             }
 
             Label {
@@ -101,8 +99,8 @@ Item {
 
             FSTextField {
                 id: _username
-                enabled: !SynoPS.conn.isConnecting
-                text: internal.storedUsername()
+                placeholderText: SynoPS.conn.auth.isCookieAvailable ? "<Saved>" : ""
+                enabled: !Facade.isConnecting
             }
 
             Item {
@@ -112,9 +110,8 @@ Item {
 
             Label {
                 id: _wrongUsernameLabel
-                text: qsTr("Enter user name")
+                text: !Facade.isConnecting && !internal.isUsernameValid ? qsTr("Enter user name") : ""
                 color: 'red'
-                visible: _username.text.length === 0
             }
 
             Label {
@@ -123,13 +120,10 @@ Item {
 
             FSTextField {
                 id: _password
-                enabled: !SynoPS.conn.isConnecting
+                enabled: !Facade.isConnecting
                 echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
-
-                Component.onCompleted: {
-                    internal.readStoredPassword();
-                }
+                placeholderText: SynoPS.conn.auth.isCookieAvailable ? "<Saved>" : ""
             }
 
             Item {
@@ -139,9 +133,8 @@ Item {
 
             Label {
                 id: _wrongPasswordLabel
-                text: qsTr("Enter password")
+                text: !Facade.isConnecting && !internal.isPasswordValid ? qsTr("Enter password") : ""
                 color: 'red'
-                visible: _password.text.length === 0
             }
 
             Item {
@@ -150,7 +143,7 @@ Item {
 
             CheckBox {
                 id: _secureConnection
-                enabled: !SynoPS.conn.isConnecting && SynoPS.conn.sslConfig.isSslAvailable
+                enabled: !Facade.isConnecting && SynoPS.conn.sslConfig.isSslAvailable
 
                 text: qsTr("Secure connection")
                 checkState: SynoPS.conn.sslConfig.isSslAvailable ? Qt.Checked : Qt.Unchecked
@@ -167,7 +160,7 @@ Item {
                       ? qsTr("Always use secure connection\nwhen accessing PhotoStation over Internet")
                       : qsTr("SSL is not available. Always use secure connection\nwhen accessing PhotoStation over Internet")
                 color: 'red'
-                visible: _secureConnection.checkState !== Qt.Checked
+                visible: !Facade.isConnecting && _secureConnection.checkState !== Qt.Checked
             }
 
             Item {
@@ -176,10 +169,9 @@ Item {
 
             CheckBox {
                 id: _rememberCredentials
-                enabled: !SynoPS.conn.isConnecting
+                enabled: !Facade.isConnecting
 
                 text: qsTr("Remember credentials")
-                checkState: Qt.Checked
             }
 
             Item {
@@ -191,7 +183,7 @@ Item {
 
             Button {
                 id: _connectButton
-                visible: !SynoPS.conn.isConnecting && SynoPS.conn.status === SynoConn.DISCONNECTED
+                visible: !Facade.isConnecting && SynoPS.conn.status === SynoConn.NONE
                 enabled: internal.isFormValid
 
                 Layout.columnSpan: 2
@@ -211,10 +203,10 @@ Item {
                 Layout.columnSpan: 2
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
 
-                text: SynoPS.conn.isConnecting ? qsTr("Abort connection") : qsTr("Disconnect")
+                text: Facade.isConnecting ? qsTr("Abort connection") : qsTr("Disconnect")
 
                 onClicked: {
-                    SynoPS.conn.disconnectFromSyno();
+                    internal.abortConnection();
                 }
             }
         }
@@ -224,10 +216,20 @@ Item {
         target: SynoPS.conn
         onStatusChanged: {
             if (SynoPS.conn.status === SynoConn.API_LOADED) {
-                if (_rememberCredentials.checked) {
-                    internal.saveCredentials();
+                SynoPS.conn.auth.authorizeWithCookie();
+            }
+        }
+    }
+
+    Connections {
+        target: SynoPS.conn.auth
+        onStatusChanged: {
+            if (SynoPS.conn.auth.status === SynoAuth.WAIT_USER) {
+                if (_username.text.length > 0 && _password.text.length > 0) {
+                    SynoPS.conn.auth.authorizeWithCredentials(_username.text, _password.text);
+                } else {
+                    internal.abortConnection();
                 }
-                SynoPS.conn.authorize(_username.text, _password.text);
             }
         }
     }
@@ -235,57 +237,120 @@ Item {
     Connections {
         target: SynoPS.conn.sslConfig
         onConfirmedSslExceptions: {
-            if (internal.isFormValid) {
-                internal.connectToSyno();
-            }
+            internal.connectToSyno(true);
         }
     }
 
     QtObject {
         id: internal
 
-        function connectToSyno() {
-            var scheme = _secureConnection.checked ? "https://" : "http://";
-            var url = scheme + _host.text + "/" + _psPath.text;
-            SynoPS.conn.connectToSyno(url);
-        }
+        readonly property bool isHostNameValid: _host.text.length > 0
+        readonly property bool isPsPathValid: _psPath.text.length > 0
+        readonly property bool isUsernameValid: _username.text.length > 0
+        readonly property bool isPasswordValid: _password.text.length > 0
 
-        function saveCredentials() {
-            _settings.setValue("hostname", _host.text);
-            _settings.setValue("psPath", _psPath.text);
-            _settings.setValue("username", _username.text);
-            _settings.saveSecure(secureKey(_host.text, _psPath.text, _username.text), _password.text);
-        }
+        readonly property bool isFormValid: isHostNameValid &&
+                                            isPsPathValid &&
+                                            isUsernameValid &&
+                                            isPasswordValid
 
-        function storedHostName() {
-            return _settings.value("hostname") || "";
-        }
+        function connectToSyno(autologin) {
+            if (!autologin) {
+                // token and cookies should be cleared
+                SynoPS.conn.auth.closeSession(true);
+            }
 
-        function storedPsPath() {
-            return _settings.value("psPath") || "/photo";
-        }
-
-        function storedUsername() {
-            return _settings.value("username") || "";
-        }
-
-        function readStoredPassword() {
-            _settings.readSecure(secureKey(storedHostName(), storedPsPath(), storedUsername()), function(key, password) {
-                // check that form is consistent with initial request, and no password is specified
-                if (_password.text.length === 0
-                        && key === secureKey(_host.text, _psPath.text, _username.text)) {
-                    _password.text = password;
+            let synoUrl = urlFromForm();
+            if (synoUrl) {
+                SynoPS.conn.auth.keepCookies = _rememberCredentials.checked;
+                if (_rememberCredentials.checked) {
+                    _settings.saveSecure("synoUrl", synoUrl);
+                } else {
+                    _settings.deleteSecure("synoUrl");
                 }
+
+                Facade.lastUsedSynoUrl = synoUrl;
+                SynoPS.conn.connectToSyno(synoUrl);
+            }
+        }
+
+        function abortConnection() {
+            Facade.autoLoginAllowed = false;
+            SynoPS.conn.disconnectFromSyno();
+            SynoPS.conn.auth.closeSession(true);
+        }
+
+        function readStoredSynoUrl() {
+            _settings.readSecure("synoUrl", function(key, secureValue) {
+                processSynoUrl(secureValue);
+            }, function() {
+                processSynoUrl();
             });
         }
 
-        function secureKey(hostname, psPath, username) {
-            return username + "@" + hostname + "^" + psPath;
+        function processSynoUrl(synoUrl) {
+            if (!!synoUrl && synoUrl.length > 0) {
+                urlToForm(synoUrl);
+            }
+
+            if (Facade.autoLoginAllowed) {
+                SynoPS.conn.auth.reloadCookies(function() {
+                    let isCookieAvailable = SynoPS.conn.auth.isCookieAvailableForUrl(urlFromForm());
+                    if (Facade.autoLoginAllowed && isCookieAvailable) {
+                        connectToSyno(true);
+                    }
+                    Facade.autoLoginAllowed = false;
+                });
+            }
         }
 
-        readonly property bool isFormValid: !_wrongHostNameLabel.visible &&
-                                            !_wrongPsPathLabel.visible &&
-                                            !_wrongUsernameLabel.visible &&
-                                            !_wrongPasswordLabel.visible
+        /*! This function parses given url into form fields */
+        function urlToForm(synoUrl) {
+            let urlObj = SynoPS.urlToMap(synoUrl);
+            console.warn("URL: ", JSON.stringify(urlObj))
+
+            _secureConnection.checked = urlObj.protocol === "https";
+
+            if (urlObj.port !== -1) {
+                _host.text = urlObj.hostname + ":" + Number(urlObj.port);
+            } else {
+                _host.text = urlObj.hostname;
+            }
+
+            _psPath.text = urlObj.pathname;
+
+            _rememberCredentials.checked = true;
+        }
+
+        /*! This function returns url from form, or undefined if form is incomplete */
+        function urlFromForm() {
+            if (_host.text.length > 0 && _psPath.text.length > 0) {
+                var urlObj = {};
+                urlObj["protocol"] = _secureConnection.checked ? "https" : "http";
+                urlObj["pathname"] = _psPath.text;
+
+                let portIdx = _host.text.indexOf(":");
+                if (portIdx !== -1) {
+                    urlObj["hostname"] = _host.text.slice(0, portIdx);
+                    urlObj["port"] = _host.text.slice(portIdx + 1);
+                } else {
+                    urlObj["hostname"] = _host.text;
+                }
+
+                return SynoPS.urlFromMap(urlObj);
+            }
+        }
+
+        Component.onCompleted: {
+            if (Facade.autoLoginAllowed) {
+                Facade.autoLoginAllowed = _settings.value("autologin", true);
+            }
+
+            if (Facade.lastUsedSynoUrl && Facade.lastUsedSynoUrl.length > 0) {
+                processSynoUrl(Facade.lastUsedSynoUrl);
+            } else {
+                internal.readStoredSynoUrl();
+            }
+        }
     }
 }

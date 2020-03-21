@@ -158,7 +158,6 @@ public:
     void updateSslErrors(const QList<QSslError>& errors = QList<QSslError>());
     void updateExpectedSslErrors(const QList<QSslError>& errors = QList<QSslError>());
 
-    void onSynoUrlChanged();
     void onSslErrors(QNetworkReply *reply, const QList<QSslError> &errors);
 
     void loadAllExceptionsFromStorage(LoadAllExceptionsFromStorageCallback callback,
@@ -195,10 +194,6 @@ SynoSslConfig::SynoSslConfig(QNetworkAccessManager* nma, SynoConn* parent)
     d->expectedErrorsModel = new SynoSslErrorModel();
 
     d->settings.setGroup(QStringLiteral("ssl"));
-
-    connect(d->conn, &SynoConn::synoUrlChanged, this, [d]() {
-        d->onSynoUrlChanged();
-    });
 
     connect(d->nma, &QNetworkAccessManager::sslErrors, this, [d](QNetworkReply *reply, const QList<QSslError> &errors) {
         d->onSslErrors(reply, errors);
@@ -326,15 +321,6 @@ void SynoSslConfig::saveExceptionsToStorage()
         QMap<QUrl, QList<QSslError> > empty;
         processReadExceptions(empty);
     });
-}
-
-void SynoSslConfigPrivate::onSynoUrlChanged()
-{
-    Q_Q(SynoSslConfig);
-
-    updateSslErrors();
-
-    q->loadExceptionsFromStorage();
 }
 
 void SynoSslConfigPrivate::onSslErrors(QNetworkReply* reply, const QList<QSslError>& errors)

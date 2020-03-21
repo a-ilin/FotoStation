@@ -23,6 +23,7 @@
 
 #include "synoalbum.h"
 #include "synoalbumfactory.h"
+#include "synoauth.h"
 #include "synoconn.h"
 #include "synorequest.h"
 #include "synoreplyjson.h"
@@ -91,6 +92,7 @@ void SynoPS::registerQmlTypes()
     qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
     qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
     qmlRegisterUncreatableType<SynoSslConfig>(qmlUrl, 1, 0, "SynoConn", "");
+    qmlRegisterUncreatableType<SynoAuth>(qmlUrl, 1, 0, "SynoAuth", "");
 }
 
 QString SynoPS::toString(const QVariant& value)
@@ -106,4 +108,37 @@ QString SynoPS::toString(const QVariant& value)
 
     // use general conversion
     return value.toString();
+}
+
+QVariantMap SynoPS::urlToMap(const QUrl& value)
+{
+    QVariantMap result;
+
+    result[QStringLiteral("protocol")] = value.scheme();
+    result[QStringLiteral("hostname")] = value.host();
+    result[QStringLiteral("port")] = value.port();
+    result[QStringLiteral("pathname")] = value.path();
+
+    return result;
+}
+
+QUrl SynoPS::urlFromMap(const QVariantMap& value)
+{
+    QUrl url;
+
+    url.setScheme(value.value(QStringLiteral("protocol")).toString());
+    url.setHost(value.value(QStringLiteral("hostname")).toString());
+    url.setPort(value.value(QStringLiteral("port"), -1).toInt());
+
+    QString pathname = value.value(QStringLiteral("pathname")).toString();
+    int pathnameIdx = 0;
+    for (; pathnameIdx < pathname.size(); ++pathnameIdx) {
+        if (pathname[pathnameIdx] != '/') {
+            break;
+        }
+    }
+    pathname = QStringLiteral("/") + pathname.midRef(pathnameIdx);
+    url.setPath(pathname);
+
+    return url;
 }

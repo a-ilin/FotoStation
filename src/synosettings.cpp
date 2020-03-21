@@ -27,33 +27,9 @@
 #endif
 
 #include "synosettings.h"
+#include "synotraits.h"
 
 #define KEYCHAIN_SERVICE_NAME QStringLiteral("SynoFotoStation")
-
-template <typename... Args>
-bool executeJSCallback(QJSValue callback, Args... args) {
-    if (!callback.isCallable()) {
-        qWarning() << __FUNCTION__ << QObject::tr("JS callback is not callable.");
-        return false;
-    }
-
-    QJSValue result = callback.call(QList<QJSValue>{ std::forward<Args>(args)... });
-    if (result.isError()) {
-        qWarning() << __FUNCTION__
-                   << QObject::tr("Exception on JS callback. ")
-                   << result.property(QStringLiteral("fileName")).toString()
-                   << QStringLiteral(":")
-                   << result.property(QStringLiteral("lineNumber")).toInt()
-                   << result.property(QStringLiteral("message")).toString()
-                   << QStringLiteral("Stack: [")
-                   << result.property(QStringLiteral("stack")).toString()
-                   << QStringLiteral("] ")
-                   << result.toString();
-        return false;
-    }
-
-    return true;
-}
 
 SynoSettings::SynoSettings(const QString& group)
 {
@@ -217,7 +193,7 @@ void SynoSettings::executeKeyChainJob(QKeychain::Job* job, QObject* context,
                     callbackSuccess(job->key());
                 }
             } else {
-                qCritical() << tr("Keychain error: ") << job->errorString();
+                qCritical() << tr("Keychain error:") << job->errorString() << tr("Entry:") << job->key();
                 if (callbackFailure) {
                     callbackFailure(job->key(), job->errorString());
                 }

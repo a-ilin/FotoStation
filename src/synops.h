@@ -20,6 +20,8 @@
 #define SYNOPS_H
 
 #include <QObject>
+#include <QUrl>
+#include <QVariantMap>
 
 class QJSEngine;
 class QQmlEngine;
@@ -57,6 +59,20 @@ public:
      * This method is intended to be used from QML.
      */
     Q_INVOKABLE static QString toString(const QVariant& value);
+
+    /*!
+     * \brief This method parses url fields into variant map
+     *
+     * This method is intended to be used from QML.
+     */
+    Q_INVOKABLE static QVariantMap urlToMap(const QUrl& value);
+
+    /*!
+     * \brief This method creates url object from variant map
+     *
+     * This method is intended to be used from QML.
+     */
+    Q_INVOKABLE static QUrl urlFromMap(const QVariantMap& value);
 
     ~SynoPS();
 
