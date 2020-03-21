@@ -26,10 +26,21 @@
 
 #include <memory>
 
+namespace QKeychain {
+class Job;
+class WritePasswordJob;
+class ReadPasswordJob;
+class DeletePasswordJob;
+}
+
 class SynoSettings : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
+
+public:
+    using SecureSuccessCallback = std::function<void(const QString& key)>;
+    using SecureFailureCallback = std::function<void(const QString& key, const QString& error)>;
 
 public:
     SynoSettings(const QString& group = QString());
@@ -49,6 +60,8 @@ public:
      * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
      */
     Q_INVOKABLE void readSecure(const QString& key, QJSValue callbackSuccess, QJSValue callbackFailure = QJSValue());
+    void readSecureC(const QString& key, QObject* context, std::function<void(const QString& key, const QString& secureValue)> callbackSuccess,
+                     SecureFailureCallback callbackFailure = SecureFailureCallback());
 
     /*!
      * \brief Writes data for specified key to secure storage
@@ -59,6 +72,9 @@ public:
      * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
      */
     Q_INVOKABLE void saveSecure(const QString& key, const QString& secureValue, QJSValue callbackSuccess = QJSValue(), QJSValue callbackFailure = QJSValue());
+    void saveSecureC(const QString& key, const QString& secureValue, QObject* context = nullptr,
+                     SecureSuccessCallback callbackSuccess = SecureSuccessCallback(),
+                     SecureFailureCallback callbackFailure = SecureFailureCallback());
 
     /*!
      * \brief Deletes data for specified key from secure storage
@@ -68,6 +84,9 @@ public:
      * \param callbackSuccess JS callback to be executed on failure or undefined. Expected signature: void(string key, string errorString)
      */
     Q_INVOKABLE void deleteSecure(const QString& key, QJSValue callbackSuccess = QJSValue(), QJSValue callbackFailure = QJSValue());
+    void deleteSecureC(const QString& key, QObject* context = nullptr,
+                       SecureSuccessCallback callbackSuccess = SecureSuccessCallback(),
+                       SecureFailureCallback callbackFailure = SecureFailureCallback());
 
     /*!
      * \brief Returns TRUE if the application is installed into system directory
@@ -79,6 +98,12 @@ signals:
 
 private:
     void endGroups();
+    void executeKeyChainJob(QKeychain::Job* job, QObject* context,
+                            SecureSuccessCallback callbackSuccess,
+                            SecureFailureCallback callbackFailure);
+    SecureSuccessCallback jsCallbackSuccess(QJSValue callbackSuccess);
+    SecureFailureCallback jsCallbackFailure(QJSValue callbackFailure);
+
     static QString securelyHashedKey(const QString& key);
 
 private:

@@ -20,6 +20,7 @@
 #include <QCryptographicHash>
 #include <QDebug>
 #include <QDir>
+#include <QPointer>
 
 #ifdef USE_KEYCHAIN
 #include <qtkeychain/keychain.h>
@@ -114,71 +115,78 @@ void SynoSettings::setValue(const QString& key, const QVariant& value)
 
 void SynoSettings::readSecure(const QString& key, QJSValue callbackSuccess, QJSValue callbackFailure)
 {
+    readSecureC(key, this, [callbackSuccess] (const QString& key, const QString& secureValue) {
+        if (!callbackSuccess.isUndefined()) {
+            executeJSCallback(callbackSuccess, QJSValue(key), QJSValue(secureValue));
+        }
+    }, jsCallbackFailure(callbackFailure));
+}
+
+void SynoSettings::readSecureC(const QString& key, QObject* context,
+                               std::function<void(const QString& key, const QString& error)> callbackSuccess, SecureFailureCallback callbackFailure)
+{
 #ifdef USE_KEYCHAIN
     QKeychain::ReadPasswordJob* job = new QKeychain::ReadPasswordJob(KEYCHAIN_SERVICE_NAME);
+    job->setSettings(m_settings.get());
     job->setKey(securelyHashedKey(key));
 
-    connect(job, &QKeychain::Job::finished, this, [=] (QKeychain::Job*) {
-        if (job->error() == QKeychain::NoError) {
-            executeJSCallback(callbackSuccess, QJSValue(key), QJSValue(job->textData()));
-        } else if (!callbackFailure.isUndefined()) {
-            executeJSCallback(callbackFailure, QJSValue(key), QJSValue(job->errorString()));
+    QPointer<QObject> contextPtr(context);
+    auto realCallbackSuccess = [contextPtr, job, callbackSuccess] (const QString& key) {
+        if (contextPtr && callbackSuccess) {
+            callbackSuccess(key, job->textData());
         }
-    });
+    };
 
-    job->start();
+    executeKeyChainJob(job, context, realCallbackSuccess, callbackFailure);
 #else
     Q_UNUSED(callbackSuccess)
-    if (!callbackFailure.isUndefined()) {
-        executeJSCallback(callbackFailure, QJSValue(key), QJSValue(tr("Keychain not enabled")));
+    Q_UNUSED(key)
+    if (context && callbackFailure) {
+        callbackFailure(key, tr("Keychain not enabled"));
     }
 #endif
 }
 
-void SynoSettings::saveSecure(const QString& key, const QString& secureValue, QJSValue callbackSuccess, QJSValue callbackFailure)
+void SynoSettings::saveSecure(const QString& key, const QString& secureValue,
+                              QJSValue callbackSuccess, QJSValue callbackFailure)
+{
+    saveSecureC(key, secureValue, this, jsCallbackSuccess(callbackSuccess), jsCallbackFailure(callbackFailure));
+}
+
+void SynoSettings::saveSecureC(const QString& key, const QString& secureValue, QObject* context, SecureSuccessCallback callbackSuccess, SecureFailureCallback callbackFailure)
 {
 #ifdef USE_KEYCHAIN
     QKeychain::WritePasswordJob* job = new QKeychain::WritePasswordJob(KEYCHAIN_SERVICE_NAME);
+    job->setSettings(m_settings.get());
     job->setKey(securelyHashedKey(key));
     job->setTextData(secureValue);
-
-    connect(job, &QKeychain::Job::finished, this, [=] (QKeychain::Job*) {
-        if (job->error() == QKeychain::NoError && !callbackSuccess.isUndefined()) {
-            executeJSCallback(callbackSuccess, QJSValue(key));
-        } else if (!callbackFailure.isUndefined()) {
-            executeJSCallback(callbackFailure, QJSValue(key), QJSValue(job->errorString()));
-        }
-    });
-
-    job->start();
+    executeKeyChainJob(job, context, callbackSuccess, callbackFailure);
 #else
     Q_UNUSED(callbackSuccess)
     Q_UNUSED(secureValue)
-    if (!callbackFailure.isUndefined()) {
-        executeJSCallback(callbackFailure, QJSValue(key), QJSValue(tr("Keychain not enabled")));
+    if (context && callbackFailure) {
+        callbackFailure(key, tr("Keychain not enabled"));
     }
 #endif
 }
 
 void SynoSettings::deleteSecure(const QString& key, QJSValue callbackSuccess, QJSValue callbackFailure)
 {
+    deleteSecureC(key, this, jsCallbackSuccess(callbackSuccess), jsCallbackFailure(callbackFailure));
+}
+
+void SynoSettings::deleteSecureC(const QString& key, QObject* context,
+                                 SecureSuccessCallback callbackSuccess, SecureFailureCallback callbackFailure)
+{
 #ifdef USE_KEYCHAIN
     QKeychain::DeletePasswordJob* job = new QKeychain::DeletePasswordJob(KEYCHAIN_SERVICE_NAME);
+    job->setSettings(m_settings.get());
     job->setKey(securelyHashedKey(key));
-
-    connect(job, &QKeychain::Job::finished, this, [=] (QKeychain::Job*) {
-        if (job->error() == QKeychain::NoError && !callbackSuccess.isUndefined()) {
-            executeJSCallback(callbackSuccess, QJSValue(key));
-        } else if (!callbackFailure.isUndefined()) {
-            executeJSCallback(callbackFailure, QJSValue(key), QJSValue(job->errorString()));
-        }
-    });
-
-    job->start();
+    executeKeyChainJob(job, context, callbackSuccess, callbackFailure);
 #else
     Q_UNUSED(callbackSuccess)
-    if (!callbackFailure.isUndefined()) {
-        executeJSCallback(callbackFailure, QJSValue(key), QJSValue(tr("Keychain not enabled")));
+    if (context && callbackFailure) {
+        callbackFailure(key, tr("Keychain not enabled"));
     }
 #endif
 }
@@ -195,7 +203,60 @@ void SynoSettings::endGroups()
     }
 }
 
+void SynoSettings::executeKeyChainJob(QKeychain::Job* job, QObject* context,
+                                      std::function<void(const QString& key)> callbackSuccess,
+                                      std::function<void(const QString& key, const QString& error)> callbackFailure)
+{
+#ifdef USE_KEYCHAIN
+    QPointer<QObject> contextPtr(context);
+    connect(job, &QKeychain::Job::finished, this,
+            [contextPtr, callbackSuccess, callbackFailure] (QKeychain::Job* job) {
+        if (contextPtr) {
+            if (job->error() == QKeychain::NoError) {
+                if (callbackSuccess) {
+                    callbackSuccess(job->key());
+                }
+            } else {
+                qCritical() << tr("Keychain error: ") << job->errorString();
+                if (callbackFailure) {
+                    callbackFailure(job->key(), job->errorString());
+                }
+            }
+        }
+    });
+
+    job->start();
+#else
+    Q_UNUSED(job)
+    Q_UNUSED(context)
+    Q_UNUSED(callbackSuccess)
+    Q_UNUSED(callbackFailure)
+#endif
+}
+
+SynoSettings::SecureSuccessCallback SynoSettings::jsCallbackSuccess(QJSValue callbackSuccess)
+{
+    return [callbackSuccess] (const QString& key) {
+        if (!callbackSuccess.isUndefined()) {
+            executeJSCallback(callbackSuccess, QJSValue(key));
+        }
+    };
+}
+
+SynoSettings::SecureFailureCallback SynoSettings::jsCallbackFailure(QJSValue callbackFailure)
+{
+    return [callbackFailure] (const QString& key, const QString& error) {
+        if (!callbackFailure.isUndefined()) {
+            executeJSCallback(callbackFailure, QJSValue(key), QJSValue(error));
+        }
+    };
+}
+
 QString SynoSettings::securelyHashedKey(const QString& key)
 {
+#if !defined(Q_OS_WIN) || defined(USE_CREDENTIAL_STORE)
     return KEYCHAIN_SERVICE_NAME + ":" + QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha1).toHex();
+#else
+    return key;
+#endif
 }
