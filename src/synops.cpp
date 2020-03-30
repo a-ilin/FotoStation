@@ -28,6 +28,7 @@
 #include "synorequest.h"
 #include "synoreplyjson.h"
 #include "synosettings.h"
+#include "synosize.h"
 #include "synosslconfig.h"
 
 static SynoPS* g_synoPS = nullptr;
@@ -87,6 +88,7 @@ void SynoPS::registerQmlTypes()
     qmlRegisterSingletonType<SynoPS>(qmlUrl, 1, 0, "SynoPS", SynoPS::fromQmlEngine);
     qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::fromQmlEngine);
     qmlRegisterSingletonType<SynoAlbumFactory>(qmlUrl, 1, 0, "SynoAlbumFactory", SynoAlbumFactory::fromQmlEngine);
+    qmlRegisterSingletonType<SynoSizeGadget>(qmlUrl, 1, 0, "SynoSize", SynoSizeGadget::fromQmlEngine);
     qmlRegisterType<SynoSettings>(qmlUrl, 1, 0, "SynoSettings");
     qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
     qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");

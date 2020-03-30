@@ -83,7 +83,8 @@ QmlObjectWrapper* SynoAlbumFactory::wrapFromCache(const QString& path, std::func
         SynoAlbum* album = ctor();
         QQmlEngine::setObjectOwnership(album, QQmlEngine::CppOwnership);
         o.reset(album);
+        m_cache.insert(path, o);
     }
-    m_cache.insert(path, o);
+
     return new QmlObjectWrapper(o);
 }

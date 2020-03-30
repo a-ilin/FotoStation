@@ -43,7 +43,7 @@ protected:
     void processNetworkRequest();
     void postProcessImage();
 
-    static QByteArray synoSizeForQSize(const QSize& size);
+    QByteArray synoThumbSize() const;
 
 protected:
     SynoImageProvider* m_provider;

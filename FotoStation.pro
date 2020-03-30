@@ -48,6 +48,7 @@ HEADERS += \
     src/synoreplyjson.h \
     src/synorequest.h \
     src/synosettings.h \
+    src/synosize.h \
     src/synosslconfig.h \
     src/synotraits.h
 
@@ -67,6 +68,7 @@ SOURCES += \
     src/synoreplyjson.cpp \
     src/synorequest.cpp \
     src/synosettings.cpp \
+    src/synosize.cpp \
     src/synosslconfig.cpp
 
 CONFIG(release, debug|release): {

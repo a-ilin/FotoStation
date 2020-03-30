@@ -1,6 +1,6 @@
 /*
  * GNU General Public License (GPL)
- * Copyright (c) 2019 by Aleksei Ilin
+ * Copyright (c) 2020 by Aleksei Ilin
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,8 +60,13 @@ FocusScope {
 
             orientation: Qt.Vertical
 
-            Controls_1.TreeView {
+            Rectangle {
+                color: Assets.appPalette.shadow
 
+                Controls_1.TreeView {
+                    anchors.fill: parent
+                    anchors.margins: 1
+                }
             }
 
             Rectangle {
@@ -71,6 +76,7 @@ FocusScope {
 
                 FSCoverArt {
                     anchors.fill: parent
+                    anchors.margins: 1
                     image.sourceSize.width: width
                     image.source: Facade.coverUrl(_albumView.selectedImageId)
                     image.fillMode: Image.PreserveAspectFit
@@ -78,13 +84,27 @@ FocusScope {
             }
         }
 
-        AlbumView {
-            id: _albumView
+        Rectangle {
+            color: Assets.appPalette.shadow
 
             SplitView.preferredWidth: root.width * 2 / 3
 
-            Component.onCompleted: {
-                setAlbumWrapper(SynoAlbumFactory.createAlbumForPath());
+            Rectangle {
+                color: Assets.appPalette.window
+
+                anchors.fill: parent
+                anchors.margins: 1
+            }
+
+            AlbumView {
+                id: _albumView
+
+                anchors.fill: parent
+                anchors.margins: 1
+
+                Component.onCompleted: {
+                    setAlbumWrapper(SynoAlbumFactory.createAlbumForPath());
+                }
             }
         }
     }

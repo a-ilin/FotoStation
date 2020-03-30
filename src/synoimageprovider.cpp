@@ -21,6 +21,7 @@
 #include "synoconn.h"
 #include "synops.h"
 #include "synoreplyjson.h"
+#include "synosize.h"
 
 #include <QBuffer>
 #include <QImageReader>
@@ -85,7 +86,7 @@ void SynoImageResponse::sendRequest()
     QByteArrayList formData;
     formData << QByteArrayLiteral("method=get");
     formData << QByteArrayLiteral("version=1");
-    formData << QByteArrayLiteral("size=") + synoSizeForQSize(m_size);
+    formData << QByteArrayLiteral("size=") + synoThumbSize();
     formData << QByteArrayLiteral("id=") + m_id;
 
     Q_ASSERT(!m_req);
@@ -198,11 +199,14 @@ void SynoImageResponse::postProcessImage()
     }
 }
 
-QByteArray SynoImageResponse::synoSizeForQSize(const QSize& size)
+QByteArray SynoImageResponse::synoThumbSize() const
 {
-    // TBD: implement
-    Q_UNUSED(size)
-    return QByteArrayLiteral("small");
+    SynoSizeGadget::SynoSize synoSize = SynoSizeGadget::instance().fitSyno(m_size.height(), m_size.width());
+    if (synoSize <= SynoSizeGadget::SIZE_M) {
+        return QByteArrayLiteral("small");
+    }
+
+    return QByteArrayLiteral("large");
 }
 
 SynoImageProvider::CacheLocker::CacheLocker(SynoImageProvider* provider)
