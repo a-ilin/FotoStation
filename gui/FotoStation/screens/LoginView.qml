@@ -57,12 +57,12 @@ Item {
 
             FSTextField {
                 id: _host
+                Layout.fillWidth: true
                 enabled: !Facade.isConnecting
             }
 
             Item {
                 width: 1
-                visible: _wrongHostNameLabel.visible
             }
 
             Label {
@@ -77,6 +77,7 @@ Item {
 
             FSTextField {
                 id: _psPath
+                Layout.fillWidth: true
                 // default path
                 text: "/photo"
                 enabled: !Facade.isConnecting
@@ -84,12 +85,11 @@ Item {
 
             Item {
                 width: 1
-                visible: _wrongPsPathLabel.visible
             }
 
             Label {
                 id: _wrongPsPathLabel
-                text: !Facade.isConnecting && !internal.isPsPathValid ? qsTr("Enter PhotoStation path (default is '/photo')") : ""
+                text: !Facade.isConnecting && !internal.isPsPathValid ? qsTr("Enter path (default is '/photo')") : ""
                 color: 'red'
             }
 
@@ -99,13 +99,13 @@ Item {
 
             FSTextField {
                 id: _username
+                Layout.fillWidth: true
                 placeholderText: SynoPS.conn.auth.isCookieAvailable ? "<Saved>" : ""
                 enabled: !Facade.isConnecting
             }
 
             Item {
                 width: 1
-                visible: _wrongUsernameLabel.visible
             }
 
             Label {
@@ -120,6 +120,7 @@ Item {
 
             FSTextField {
                 id: _password
+                Layout.fillWidth: true
                 enabled: !Facade.isConnecting
                 echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
@@ -128,7 +129,6 @@ Item {
 
             Item {
                 width: 1
-                visible: _wrongPasswordLabel.visible
             }
 
             Label {
@@ -151,7 +151,6 @@ Item {
 
             Item {
                 width: 1
-                visible: _unsecureConnectionLabel.visible
             }
 
             Label {
@@ -159,8 +158,9 @@ Item {
                 text: SynoPS.conn.sslConfig.isSslAvailable
                       ? qsTr("Always use secure connection\nwhen accessing PhotoStation over Internet")
                       : qsTr("SSL is not available. Always use secure connection\nwhen accessing PhotoStation over Internet")
+                maximumLineCount: 2
                 color: 'red'
-                visible: !Facade.isConnecting && _secureConnection.checkState !== Qt.Checked
+                opacity: !Facade.isConnecting && _secureConnection.checkState !== Qt.Checked ? 1.0 : 0.0
             }
 
             Item {

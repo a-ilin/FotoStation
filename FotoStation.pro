@@ -1,4 +1,4 @@
-QT += core core-private network quick widgets
+QT += core core-private network quick quickcontrols2 widgets
 CONFIG += c++17 no_private_qt_headers_warning
 
 # The following define makes your compiler emit warnings if you use

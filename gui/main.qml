@@ -23,14 +23,17 @@ import QtQuick.Window 2.13
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.platform 1.0
 
 ApplicationWindow {
     id: root
 
+    visible: false
+
     width: 800
-    minimumWidth: 640
+    minimumWidth: 800
     height: 600
-    minimumHeight: 480
+    minimumHeight: 600
 
     title: qsTr("FotoStation")
 
@@ -71,6 +74,10 @@ ApplicationWindow {
         internal.saveWindowGeometry();
     }
 
+    AppStyler {
+        id: _appStyler
+    }
+
     TextMetrics {
         id: _fm
         text: "M"
@@ -95,6 +102,7 @@ ApplicationWindow {
         Loader {
             id: _loader
             anchors.fill: parent
+            asynchronous: false
 
             function showForm(formSource) {
                 if (source !== formSource) {
@@ -208,9 +216,11 @@ ApplicationWindow {
 
     Component.onCompleted: {
         Assets.appPalette = Qt.binding(function() { return root.palette; });
-
         internal.showAuthorizationForm();
-        internal.restoreWindowGeometry();
-        root.visible = true;
+
+        _appStyler.ensureStyleApplied(root, function() {
+            internal.restoreWindowGeometry();
+            root.visible = true;
+        });
     }
 }

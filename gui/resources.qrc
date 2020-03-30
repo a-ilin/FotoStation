@@ -29,5 +29,8 @@
         <file>FotoStation/globals/OverlayManager.qml</file>
         <file>FotoStation/globals/qmldir</file>
         <file>FotoStation/globals/SslExceptionsPopup.qml</file>
+        <file>FotoStation/platform/windows/AppStylerWindows.qml</file>
+        <file>FotoStation/platform/AppStyler.qml</file>
+        <file>FotoStation/platform/qmldir</file>
     </qresource>
 </RCC>

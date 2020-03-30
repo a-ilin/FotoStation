@@ -21,10 +21,17 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlPropertyMap>
+#include <QQuickStyle>
 #include <QQuickWindow>
 
 #include "src/synops.h"
 #include "src/synoimageprovider.h"
+
+#if defined(Q_OS_ANDROID)
+#define IS_MOBILE 1
+#else
+#define IS_MOBILE 0
+#endif
 
 static void populateRootContext(QQmlContext* ctx)
 {
@@ -39,20 +46,32 @@ static void populateRootContext(QQmlContext* ctx)
     runtimeMap->insert(QStringLiteral("isDebug"), isDebug);
 
     // set mobile flag
-#if defined(Q_OS_ANDROID)
-    bool isMobile = true;
-#else
-    bool isMobile = false;
+    runtimeMap->insert(QStringLiteral("isMobile"), static_cast<bool>(IS_MOBILE));
+
+    // set platform Windows flag
+    bool isPlatformWindows = false;
+#ifdef Q_OS_WIN
+    isPlatformWindows = true;
 #endif
-    runtimeMap->insert(QStringLiteral("isMobile"), isMobile);
+    runtimeMap->insert(QStringLiteral("isPlatformWindows"), isPlatformWindows);
 
     ctx->setContextProperty(QStringLiteral("Runtime"), runtimeMap);
+}
+
+void applyStyle()
+{
+#ifdef Q_OS_WIN
+    QQuickStyle::setStyle(QStringLiteral("Universal"));
+#endif
 }
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+
+    if (!IS_MOBILE) {
+        QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+    }
 
     QCoreApplication::setApplicationName("FotoStation");
     QCoreApplication::setOrganizationName("FotoStation");
@@ -80,6 +99,9 @@ int main(int argc, char *argv[])
                              QCoreApplication::exit(-1);
                          }
                      }, Qt::QueuedConnection);
+
+    applyStyle();
+
     engine.load(url);
 
     return app.exec();
