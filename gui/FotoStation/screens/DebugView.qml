@@ -16,13 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
-import QtQuick.Controls 2.13
-import QtQuick.Layouts 1.13
-import QtQuick.Window 2.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Window 2.15
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 import FotoStation.widgets 1.0
 
 Window {
@@ -110,6 +111,7 @@ Window {
 
                 AnimatedImage {
                     id: _requestProgressImage
+                    asynchronous: true
                     height: 16
                     width: 16
                     source: internal.isAwaitingReply ? Assets.animated.roller_16 : ""

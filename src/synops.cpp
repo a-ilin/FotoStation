@@ -21,15 +21,10 @@
 #include <QtCore/private/qobject_p.h>
 #include <QtQml>
 
-#include "synoalbum.h"
 #include "synoalbumfactory.h"
-#include "synoauth.h"
 #include "synoconn.h"
-#include "synorequest.h"
 #include "synoreplyjson.h"
-#include "synosettings.h"
 #include "synosize.h"
-#include "synosslconfig.h"
 
 static SynoPS* g_synoPS = nullptr;
 
@@ -89,12 +84,6 @@ void SynoPS::registerQmlTypes()
     qmlRegisterSingletonType<SynoReplyJSONFactory>(qmlUrl, 1, 0, "SynoReplyJSONFactory", SynoReplyJSONFactory::fromQmlEngine);
     qmlRegisterSingletonType<SynoAlbumFactory>(qmlUrl, 1, 0, "SynoAlbumFactory", SynoAlbumFactory::fromQmlEngine);
     qmlRegisterSingletonType<SynoSizeGadget>(qmlUrl, 1, 0, "SynoSize", SynoSizeGadget::fromQmlEngine);
-    qmlRegisterType<SynoSettings>(qmlUrl, 1, 0, "SynoSettings");
-    qmlRegisterUncreatableType<SynoAlbum>(qmlUrl, 1, 0, "SynoAlbum", "");
-    qmlRegisterUncreatableType<SynoConn>(qmlUrl, 1, 0, "SynoConn", "");
-    qmlRegisterUncreatableType<SynoRequest>(qmlUrl, 1, 0, "SynoRequest", "");
-    qmlRegisterUncreatableType<SynoSslConfig>(qmlUrl, 1, 0, "SynoConn", "");
-    qmlRegisterUncreatableType<SynoAuth>(qmlUrl, 1, 0, "SynoAuth", "");
 }
 
 QString SynoPS::toString(const QVariant& value)

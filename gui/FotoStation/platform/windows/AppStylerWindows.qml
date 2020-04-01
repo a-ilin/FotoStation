@@ -16,11 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
-import QtQuick.Controls 2.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Controls.Universal 2.12
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 
 Item {
     id: root

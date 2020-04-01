@@ -1,6 +1,6 @@
 /*
  * GNU General Public License (GPL)
- * Copyright (c) 2019 by Aleksei Ilin
+ * Copyright (c) 2020 by Aleksei Ilin
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
-import QtQuick.Controls 2.13
-import QtQuick.Layouts 1.13
-import QtQuick.Window 2.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Window 2.15
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 import FotoStation.platform 1.0
 
 ApplicationWindow {
     id: root
+    objectName: "MainAppWindow"
+
+    readonly property alias colorHandler: _colorHandler
 
     visible: false
 
@@ -60,6 +63,8 @@ ApplicationWindow {
     }
 
     footer: Loader {
+        objectName: "FooterLoader"
+
         readonly property int borderMargin: _fm.height * 0.3
 
         height: Math.max(16, _fm.height) + borderMargin * 2 + 1
@@ -78,6 +83,11 @@ ApplicationWindow {
         id: _appStyler
     }
 
+    ColorHandler {
+        id: _colorHandler
+        appWindow: root
+    }
+
     TextMetrics {
         id: _fm
         text: "M"
@@ -89,6 +99,8 @@ ApplicationWindow {
     }
 
     FocusScope {
+        objectName: "RootFocusScope"
+
         anchors.fill: parent
         focus: true
 
@@ -101,6 +113,8 @@ ApplicationWindow {
 
         Loader {
             id: _loader
+            objectName: "RootLoader"
+
             anchors.fill: parent
             asynchronous: false
 
@@ -114,6 +128,8 @@ ApplicationWindow {
 
     Loader {
         id: _overlayManager
+        objectName: "OverlayManagerLoader"
+
         anchors.fill: parent
 
         Component.onCompleted: {
@@ -123,14 +139,14 @@ ApplicationWindow {
 
     Connections {
         target: SynoPS.conn
-        onStatusChanged: {
+        function onStatusChanged() {
             internal.processConnectionStatusChange();
         }
     }
 
     Connections {
         target: SynoPS.conn.auth
-        onStatusChanged: {
+        function onStatusChanged() {
             internal.processConnectionStatusChange();
         }
     }
@@ -216,6 +232,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         Assets.appPalette = Qt.binding(function() { return root.palette; });
+
         internal.showAuthorizationForm();
 
         _appStyler.ensureStyleApplied(root, function() {

@@ -140,22 +140,18 @@ const QByteArray& SynoRequest::contentEncoding() const
 
 void SynoRequest::send()
 {
-    if (m_conn) {
-        if (QThread::currentThread() == m_conn->thread()) {
+    Q_ASSERT(m_conn);
 
+    if (QThread::currentThread() == m_conn->thread()) {
 #ifdef QT_DEBUG
-            qDebug() << QStringLiteral("RQ:API: ") << m_api;
-            qDebug() << QStringLiteral("RQ:FormData: ") << m_formData;
+        qDebug() << QStringLiteral("RQ:API: ") << m_api;
+        qDebug() << QStringLiteral("RQ:FormData: ") << m_formData;
 #endif
 
-            m_conn->sendRequest(this);
-        } else {
-            QMetaObject::invokeMethod(this, std::bind(qOverload<void>(&SynoRequest::send), this),
-                                      Qt::QueuedConnection, nullptr);
-        }
+        m_conn->sendRequest(this);
     } else {
-        setErrorString(tr("Cannot send request. Connection object was destroyed or not set."));
-        emit finished();
+        QMetaObject::invokeMethod(this, std::bind(qOverload<void>(&SynoRequest::send), this),
+                                  Qt::QueuedConnection, nullptr);
     }
 }
 
@@ -163,6 +159,7 @@ void SynoRequest::send(QObject* context, std::function<void ()> callback)
 {
     Q_ASSERT(context);
     Q_ASSERT(callback);
+
     QObject::disconnect(m_callbackConnection);
     m_callbackConnection = QObject::connect(this, &SynoRequest::finished, context, callback);
     send();
@@ -187,16 +184,14 @@ void SynoRequest::send(QJSValue callback)
 
 void SynoRequest::cancel()
 {
-    if (m_conn) {
-        if (QThread::currentThread() == m_conn->thread()) {
-            QObject::disconnect(m_callbackConnection);
-            QObject::disconnect(m_reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
-            m_conn->cancelRequest(this);
-        } else {
-            QMetaObject::invokeMethod(this, std::bind(&SynoRequest::cancel, this), Qt::QueuedConnection);
-        }
+    Q_ASSERT(m_conn);
+
+    if (QThread::currentThread() == m_conn->thread()) {
+        QObject::disconnect(m_callbackConnection);
+        QObject::disconnect(m_reply, &QNetworkReply::finished, this, &SynoRequest::onReplyFinished);
+        m_conn->cancelRequest(this);
     } else {
-        setErrorString(tr("Cannot cancel request. Connection object was destroyed or not set."));
+        QMetaObject::invokeMethod(this, std::bind(&SynoRequest::cancel, this), Qt::QueuedConnection);
     }
 }
 
@@ -255,7 +250,7 @@ void SynoRequest::onReplyFinished()
 
 #ifdef QT_DEBUG
     qDebug() << QStringLiteral("RP:Headers: ") << m_reply->rawHeaderPairs();
-    qDebug() << QStringLiteral("RP:Body: ") << m_replyBody;
+    qDebug() << QStringLiteral("RP:Body: ") << (TEXT == m_contentType ? m_replyBody : QByteArrayLiteral("<binary>"));
 #endif
 
     emit finished();

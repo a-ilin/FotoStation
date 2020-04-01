@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
-import QtQuick.Controls 2.13
-import QtQuick.Layouts 1.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 
 Rectangle {
     id: root
@@ -52,6 +53,7 @@ Rectangle {
             id: _connectionProgressImage
             height: 16
             width: 16
+            asynchronous: true
             source: Facade.isConnecting ? Assets.animated.roller_16 : ""
         }
 

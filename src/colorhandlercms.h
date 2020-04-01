@@ -1,47 +1,46 @@
 /*
  * GNU General Public License (GPL)
- * Copyright (c) 2019 by Aleksei Ilin
+ * Copyright (c) 2020 by Aleksei Ilin
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.15
-import QtGraphicalEffects 1.0
+#ifndef COLORHANDLERCMS_H
+#define COLORHANDLERCMS_H
 
-import FotoStation.assets 1.0
+#include <memory>
 
-Item {
-    id: root
+#include <qglobal.h>
 
-    property alias color: _effect.color
-    property alias source: _srcImage.source
+class QColorSpace;
+class QImage;
 
-    implicitHeight: _srcImage.height
-    implicitWidth: _srcImage.width
+class ColorHandlerCmsPrivate;
+class ColorHandlerCms
+{
+    Q_DECLARE_PRIVATE(ColorHandlerCms)
 
-    Image {
-        id: _srcImage
-        asynchronous: true
-        visible: false
-    }
+public:
+    static ColorHandlerCms& instance();
 
-    ColorOverlay {
-        id: _effect
-        anchors.centerIn: parent
-        height: _srcImage.height
-        width: _srcImage.width
-        source: _srcImage
-        color: Assets.colors.iconDefault
-    }
-}
+    bool convertColorSpace(QImage& image, const QColorSpace& source, const QColorSpace& target);
+
+private:
+    ColorHandlerCms();
+
+private:
+    std::unique_ptr<ColorHandlerCmsPrivate> d_ptr;
+};
+
+#endif // COLORHANDLERCMS_H

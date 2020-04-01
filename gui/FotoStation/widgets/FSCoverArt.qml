@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
+import QtQuick 2.15
 import QtGraphicalEffects 1.0
 
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 
 Item {
     id: root
@@ -29,12 +30,14 @@ Item {
     readonly property bool isError: _coverImage.status === Image.Error
     readonly property bool isLoaded: _coverImage.status === Image.Ready
 
-    Image {
+    ImageAdvanced {
         id: _coverImage
         anchors.fill: parent
         fillMode: Image.PreserveAspectCrop
         clip: true
         smooth: true
+        asynchronous: true
+        windowColorSpace: colorHandler.colorSpace
     }
 
     FSIcon {
@@ -46,6 +49,7 @@ Item {
 
     AnimatedImage {
         id: _loadingIndicator
+        asynchronous: true
         source: !root.isError && !root.isLoaded ? Assets.animated.roller_32 : ""
         visible: false
     }

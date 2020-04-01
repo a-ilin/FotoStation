@@ -17,12 +17,13 @@
  */
 
 import QtGraphicalEffects 1.0 as QGE
-import QtQuick 2.13
-import QtQuick.Controls 2.13
-import QtQuick.Layouts 1.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 import FotoStation.widgets 1.0
 
 FocusScope {
@@ -178,7 +179,7 @@ FocusScope {
                 anchors.bottom: _albumTitle.top
                 anchors.bottomMargin: _view.border
                 image.sourceSize.width: width
-                image.source: Facade.coverUrl(imageId)
+                image.source: Facade.thumbUrl(imageId)
             }
 
             Rectangle {
@@ -230,6 +231,7 @@ FocusScope {
 
         AnimatedImage {
             id: _loadingIndicator
+            asynchronous: true
             source: _view.count === 0 ? Assets.animated.roller_64 : ""
             visible: false
         }

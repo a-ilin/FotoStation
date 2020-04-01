@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
+import QtQuick 2.15
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 
 FocusScope {
     id: root
@@ -45,7 +46,7 @@ FocusScope {
 
         Connections {
             target: SynoPS.conn.sslConfig
-            onIsSslErrorChanged: {
+            function onIsSslErrorChanged() {
                 _sslExceptionsPopupLoader.resetActivation();
             }
         }

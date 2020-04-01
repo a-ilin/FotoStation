@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "synoauth.h"
-#include "synoconn.h"
+#include "synoconn_p.h"
 #include "synoerror.h"
 #include "synoreplyjson.h"
-#include "synorequest.h"
-#include "synosslconfig.h"
 #include "synotraits.h"
 
 #include <QDebug>
@@ -31,13 +28,15 @@
 #include <QThread>
 #include <QUrlQuery>
 
-SynoConn::SynoConn(QObject *parent)
-    : QObject(parent)
-    , m_status(SynoConn::NONE)
-    , m_sslConfig(new SynoSslConfig(&m_networkManager, this))
-    , m_auth(new SynoAuth(&m_networkManager, this))
+SynoConn::SynoConn(QObject* parent)
+    : QObject(*(new SynoConnPrivate()), parent)
 {
-    m_apiPath = QByteArrayLiteral("webapi");
+    Q_D(SynoConn);
+
+    d->apiDir = QByteArrayLiteral("webapi");
+    d->status = SynoConn::NONE;
+    d->auth = new SynoAuth(&d->networkManager, this);
+    d->sslConfig = new SynoSslConfig(&d->networkManager, this);
 }
 
 SynoConn::~SynoConn()
@@ -47,40 +46,44 @@ SynoConn::~SynoConn()
 
 void SynoConn::connectToSyno(const QUrl& synoUrl)
 {
+    Q_D(SynoConn);
+
     disconnectFromSyno();
 
-    m_sslConfig->clearErrors();
+    d->sslConfig->clearErrors();
 
-    if (m_synoUrl != synoUrl) {
-        m_synoUrl = synoUrl;
+    if (d->synoUrl != synoUrl) {
+        d->synoUrl = synoUrl;
 
         // reload SSL config
-        m_sslConfig->loadExceptionsFromStorage();
+        d->sslConfig->loadExceptionsFromStorage();
 
         emit synoUrlChanged();
     }
 
     if (synoUrl.scheme() == QStringLiteral("https")) {
-        if (m_sslConfig->isSslAvailable()) {
-            m_sslConfig->connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
+        if (d->sslConfig->isSslAvailable()) {
+            d->sslConfig->connectToHostEncrypted(synoUrl.host(), static_cast<quint16>(synoUrl.port(443)));
         } else {
-            setErrorString(tr("Cannot use encrypted connection: SSL not available."));
+            d->setErrorString(tr("Cannot use encrypted connection: SSL not available."));
             return;
         }
     } else {
-        m_networkManager.connectToHost(synoUrl.host(), static_cast<quint16>(synoUrl.port(80)));
+        d->networkManager.connectToHost(synoUrl.host(), static_cast<quint16>(synoUrl.port(80)));
     }
 
-    sendApiMapRequest();
+    d->sendApiMapRequest();
 }
 
 void SynoConn::disconnectFromSyno()
 {
+    Q_D(SynoConn);
+
     cancelAllRequests();
-    m_networkManager.clearConnectionCache();
-    m_networkManager.clearAccessCache();
-    m_auth->closeSession(false);
-    setStatus(SynoConn::NONE);
+    d->networkManager.clearConnectionCache();
+    d->networkManager.clearAccessCache();
+    d->auth->closeSession(false);
+    d->setStatus(SynoConn::NONE);
 }
 
 SynoRequest* SynoConn::createRequest(const QString& api, const QStringList& formData)
@@ -106,24 +109,23 @@ std::shared_ptr<SynoRequest> SynoConn::createRequest(const QByteArray& api,
 
 void SynoConn::sendRequest(SynoRequest* request)
 {
+    Q_D(SynoConn);
+
     Q_ASSERT(request);
-    if (!request) {
-        qWarning() << __FUNCTION__ << "nullptr is not allowed";
-        return;
-    }
 
-    QString path = apiPath(request->api());
+    QString path = d->pathForAPI(request->api());
+    Q_ASSERT(!path.isEmpty());
     if (path.isNull()) {
-        request->setErrorString(tr("Unknown API"));
+        request->setErrorString(tr("Unknown API: %1").arg(QString::fromUtf8(request->api())));
         return;
     }
 
-    QUrl url(m_synoUrl);
+    QUrl url(d->synoUrl);
     url.setPath(path);
 
     QUrlQuery urlQuery;
 
-    const QByteArray& token = m_auth->synoToken();
+    const QByteArray& token = d->auth->synoToken();
 
     if (!token.isEmpty()) {
         request->request().setRawHeader(QByteArrayLiteral("X-SYNO-TOKEN"), token);
@@ -135,7 +137,7 @@ void SynoConn::sendRequest(SynoRequest* request)
     request->request().setHeader(QNetworkRequest::ContentTypeHeader, QByteArrayLiteral("application/x-www-form-urlencoded"));
 
     QByteArray body;
-    body.reserve(4096);
+    body.reserve(512);
     body += QByteArrayLiteral("api=") + request->api();
 
     if (!token.isEmpty()) {
@@ -152,35 +154,33 @@ void SynoConn::sendRequest(SynoRequest* request)
         QObject::disconnect(reply, nullptr, this, nullptr);
     }
 
-    QNetworkReply* reply = m_networkManager.post(request->request(), body);
+    QNetworkReply* reply = d->networkManager.post(request->request(), body);
     request->setReply(reply);
 
-    m_pendingRequests.insert(request);
-    connect(reply, &QNetworkReply::finished, this, std::bind(&SynoConn::onReplyFinished, this, request));
+    d->pendingRequests.insert(request);
+    connect(reply, &QNetworkReply::finished, this, std::bind(&SynoConnPrivate::onReplyFinished, d, request));
 }
 
 void SynoConn::cancelRequest(SynoRequest* request)
 {
+    Q_D(SynoConn);
+
     Q_ASSERT(request);
-    if (!request) {
-        qWarning() << __FUNCTION__ << "nullptr is not allowed";
-        return;
-    }
 
-    QNetworkReply* reply = request->reply();
-    if (!reply) {
-        qWarning() << __FUNCTION__ << "Nothing to cancel, the request has not been sent";
-        return;
+    if (QNetworkReply* reply = request->reply()) {
+        d->pendingRequests.remove(request);
+        reply->abort();
+    } else {
+        qWarning() << __FUNCTION__ << QStringLiteral("Nothing to cancel, the request has not been sent");
     }
-
-    m_pendingRequests.remove(request);
-    reply->abort();
 }
 
 void SynoConn::cancelAllRequests()
 {
+    Q_D(SynoConn);
+
     QSet< SynoRequest* > requests;
-    std::swap(requests, m_pendingRequests);
+    std::swap(requests, d->pendingRequests);
 
     for (SynoRequest* req : std::as_const(requests)) {
         if (QNetworkReply* reply = req->reply()) {
@@ -191,67 +191,93 @@ void SynoConn::cancelAllRequests()
 
 SynoConn::SynoConnStatus SynoConn::status() const
 {
-    return m_status;
+    Q_D(const SynoConn);
+
+    return d->status;
 }
 
 QStringList SynoConn::apiList() const
 {
+    Q_D(const SynoConn);
+
     QStringList apiList;
-    apiList.reserve(m_apiMap.size());
-    std::for_each(m_apiMap.keyBegin(), m_apiMap.keyEnd(), [&](const QByteArray& api) {
-        apiList << QString::fromLatin1(api);
+    apiList.reserve(d->apiMap.size());
+    std::for_each(d->apiMap.keyBegin(), d->apiMap.keyEnd(), [&](const QByteArray& api) {
+        apiList << QString::fromUtf8(api);
     });
     return apiList;
 }
 
 const QUrl& SynoConn::synoUrl() const
 {
-    return m_synoUrl;
+    Q_D(const SynoConn);
+
+    return d->synoUrl;
 }
 
 const QString& SynoConn::errorString() const
 {
-    return m_errorString;
+    Q_D(const SynoConn);
+
+    return d->errorString;
 }
 
-void SynoConn::setErrorString(const QString& err)
+void SynoConnPrivate::setErrorString(const QString& err)
 {
-    if (err != m_errorString) {
-        m_errorString = err;
-        emit errorStringChanged();
+    Q_Q(SynoConn);
+
+    if (err != errorString) {
+        errorString = err;
+
+        if (!errorString.isEmpty()) {
+            qWarning() << errorString;
+        }
+
+        emit q->errorStringChanged();
     }
 }
 
 SynoSslConfig* SynoConn::sslConfig() const
 {
-    return m_sslConfig;
+    Q_D(const SynoConn);
+
+    return d->sslConfig;
 }
 
 SynoAuth* SynoConn::auth() const
 {
-    return m_auth;
+    Q_D(const SynoConn);
+
+    return d->auth;
 }
 
-QString SynoConn::apiPath(const QByteArray& api) const
+QString SynoConnPrivate::pathForAPI(const QByteArray& api) const
 {
-    if (!m_apiMap.contains(api)) {
-        return QString();
+    QString apiPath = apiMap.value(api);
+    QString fullPath;
+
+    if (!apiPath.isEmpty()) {
+        fullPath.reserve(256);
+
+        fullPath += synoUrl.path();
+        fullPath += '/';
+        fullPath += apiDir;
+        fullPath += '/';
+        fullPath += apiPath;
     }
 
-    QStringList path;
-    path << m_synoUrl.path()
-         << m_apiPath
-         << QString::fromLatin1(m_apiMap[api]);
-    return path.join('/');
+    return fullPath;
 }
 
-void SynoConn::sendApiMapRequest()
+void SynoConnPrivate::sendApiMapRequest()
 {
+    Q_Q(SynoConn);
+
     setStatus(SynoConn::ATTEMPT_API);
 
-    m_apiMap.clear();
-    m_apiMap[QByteArrayLiteral("SYNO.API.Info")] = QByteArrayLiteral("query.php");
-    emit apiListChanged();
+    apiMap.clear();
+    apiMap[QByteArrayLiteral("SYNO.API.Info")] = QStringLiteral("query.php");
+    emit q->apiListChanged();
 
     QByteArrayList formData;
     formData << QByteArrayLiteral("query=all");
@@ -259,8 +285,8 @@ void SynoConn::sendApiMapRequest()
     formData << QByteArrayLiteral("version=1");
     formData << QByteArrayLiteral("ps_username=");
 
-    std::shared_ptr<SynoRequest> req = createRequest(QByteArrayLiteral("SYNO.API.Info"), formData);
-    req->send(this, [this, req]() {
+    std::shared_ptr<SynoRequest> req = q->createRequest(QByteArrayLiteral("SYNO.API.Info"), formData);
+    req->send(q, [this, req]() {
         if (processApiMapReply(req.get())) {
             setStatus(SynoConn::API_LOADED);
         } else {
@@ -269,12 +295,13 @@ void SynoConn::sendApiMapRequest()
     });
 }
 
-bool SynoConn::processApiMapReply(const SynoRequest* req)
+bool SynoConnPrivate::processApiMapReply(const SynoRequest* req)
 {
+    Q_Q(SynoConn);
+
     auto failure = [this](const QString& reason) {
         setStatus(SynoConn::NONE);
-        this->setErrorString(tr("Cannot populate API map. %1").arg(reason));
-        qDebug() << errorString();
+        setErrorString(QObject::tr("Cannot populate API map. %1").arg(reason));
     };
 
     if (!req->errorString().isEmpty()) {
@@ -291,37 +318,41 @@ bool SynoConn::processApiMapReply(const SynoRequest* req)
     const QJsonObject& dataObject = replyJSON.dataObject();
 
     if (!dataObject.size()) {
-        failure(tr("Received empty API map"));
+        failure(QObject::tr("Received empty API map"));
         return false;
     }
 
     for (auto iter = replyJSON.dataObject().constBegin(); iter != replyJSON.dataObject().constEnd(); ++iter) {
         QString path = iter.value().toObject()[QStringLiteral("path")].toString();
         if (!path.isEmpty()) {
-            m_apiMap[iter.key().toUtf8()] = path.toUtf8();
+            apiMap[iter.key().toUtf8()] = path;
         } else {
             // TODO: collect list of API to fail if empty
-            qWarning() << __FUNCTION__ << tr("Received empty path for API: ") << iter.key();
+            qWarning() << __FUNCTION__ << QObject::tr("Received empty path for API: ") << iter.key();
         }
     }
 
-    emit apiListChanged();
+    emit q->apiListChanged();
 
     return true;
 }
 
-void SynoConn::setStatus(SynoConn::SynoConnStatus status)
+void SynoConnPrivate::setStatus(SynoConn::SynoConnStatus neuStatus)
 {
-    if (status != m_status) {
-        m_status = status;
-        qDebug() << __FUNCTION__ << "Status:" << m_status;
-        emit statusChanged();
+    Q_Q(SynoConn);
+
+    if (neuStatus != status) {
+        status = neuStatus;
+        qDebug() << __FUNCTION__ << "Status:" << status;
+        emit q->statusChanged();
     }
 }
 
-void SynoConn::onReplyFinished(SynoRequest* request)
+void SynoConnPrivate::onReplyFinished(SynoRequest* request)
 {
-    m_pendingRequests.remove(request);
+    Q_Q(SynoConn);
+
+    pendingRequests.remove(request);
 
     QNetworkReply* reply = request->reply();
 
@@ -343,8 +374,8 @@ void SynoConn::onReplyFinished(SynoRequest* request)
         case QNetworkReply::ProxyTimeoutError:
         case QNetworkReply::ProxyAuthenticationRequiredError:
         case QNetworkReply::UnknownProxyError:
-            qWarning() << __FUNCTION__ << "Network fatal error:" << reply->error();
-            disconnectFromSyno();
+            setErrorString(QObject::tr("Network fatal error: %1").arg(reply->error()));
+            q->disconnectFromSyno();
             break;
         default:
             break;

@@ -18,6 +18,7 @@
 
 #include "synoimageprovider.h"
 #include "synoimageprovider_p.h"
+#include "colorhandler.h"
 #include "synoconn.h"
 #include "synops.h"
 #include "synoreplyjson.h"
@@ -32,7 +33,11 @@
 
 SynoImageProvider::SynoImageProvider(SynoConn* conn)
     : QObject()
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+    , QQuickImageProviderWithOptions(ImageResponse, ForceAsynchronousImageLoading)
+#else
     , QQuickAsyncImageProvider()
+#endif
     , m_conn(conn)
 {
     QTimer* cacheStatisticTimer = new QTimer(this);
@@ -57,17 +62,23 @@ void SynoImageProvider::invalidateInCache(const QString& id)
     cacheLocker.cache().remove(id);
 }
 
-QQuickImageResponse* SynoImageProvider::requestImageResponse(const QString& id, const QSize& requestedSize)
+QQuickImageResponse* SynoImageProvider::requestImageResponse(const QString& id,
+                                                             const QSize& requestedSize,
+                                                             const QQuickImageProviderOptions& options)
 {
-    SynoImageResponse* response = new SynoImageResponse(this, id.toLatin1(), requestedSize);
-    response->load();
+    SynoImageResponse* response = new SynoImageResponse(this, id.toLatin1(), requestedSize, options);
+    QTimer::singleShot(0, response, &SynoImageResponse::load);
     return response;
 }
 
-SynoImageResponse::SynoImageResponse(SynoImageProvider* provider, const QByteArray& id, const QSize& size)
+SynoImageResponse::SynoImageResponse(SynoImageProvider* provider,
+                                     const QByteArray& id,
+                                     const QSize& size,
+                                     const QQuickImageProviderOptions& options)
     : m_provider(provider)
     , m_id(id)
     , m_size(size)
+    , m_options(options)
 {
 }
 
@@ -75,7 +86,7 @@ void SynoImageResponse::load()
 {
     if (loadFromCache()) {
         postProcessImage();
-        QTimer::singleShot(0, this, std::bind(&SynoImageResponse::finished, this));
+        emit finished();
     } else {
         sendRequest();
     }
@@ -197,6 +208,8 @@ void SynoImageResponse::postProcessImage()
         QSize sz = m_size.expandedTo(QSize(1, 1));
         m_image = m_image.scaled(sz, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
     }
+
+    ColorHandler::convertColorSpace(m_image, m_image.colorSpace(), m_options.targetColorSpace());
 }
 
 QByteArray SynoImageResponse::synoThumbSize() const

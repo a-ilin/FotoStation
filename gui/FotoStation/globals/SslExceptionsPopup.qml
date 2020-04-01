@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
+import QtQuick 2.15
 import QtQuick.Controls 2.5
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 
 Dialog {
     id: root

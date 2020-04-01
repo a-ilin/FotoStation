@@ -1,47 +1,51 @@
 /*
  * GNU General Public License (GPL)
- * Copyright (c) 2019 by Aleksei Ilin
+ * Copyright (c) 2020 by Aleksei Ilin
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.15
-import QtGraphicalEffects 1.0
+#ifndef COLORHANDLER_P_H
+#define COLORHANDLER_P_H
 
-import FotoStation.assets 1.0
+#include "colorhandler.h"
 
-Item {
-    id: root
+#include <QtCore/private/qobject_p.h>
 
-    property alias color: _effect.color
-    property alias source: _srcImage.source
+#include <QByteArray>
+#include <QDebug>
+#include <QImage>
+#include <QPointer>
+#include <QScreen>
+#include <QWindow>
 
-    implicitHeight: _srcImage.height
-    implicitWidth: _srcImage.width
+class ColorHandlerPrivate : public QObjectPrivate
+{
+    Q_DECLARE_PUBLIC(ColorHandler)
 
-    Image {
-        id: _srcImage
-        asynchronous: true
-        visible: false
+public:
+    ColorHandlerPrivate()
+        : QObjectPrivate()
+    {
     }
 
-    ColorOverlay {
-        id: _effect
-        anchors.centerIn: parent
-        height: _srcImage.height
-        width: _srcImage.width
-        source: _srcImage
-        color: Assets.colors.iconDefault
-    }
-}
+    void initializeColorSpace(bool force);
+    void readPlatformIccProfile();
+
+    QPointer<QWindow> appWindow;
+    QByteArray iccProfile;
+    QColorSpace colorSpace;
+};
+
+#endif // COLORHANDLER_P_H

@@ -73,8 +73,8 @@ int main(int argc, char *argv[])
         QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     }
 
-    QCoreApplication::setApplicationName("FotoStation");
-    QCoreApplication::setOrganizationName("FotoStation");
+    QCoreApplication::setApplicationName(QStringLiteral("FotoStation"));
+    QCoreApplication::setOrganizationName(QStringLiteral("FotoStation"));
 
     QGuiApplication app(argc, argv);
 
@@ -86,8 +86,9 @@ int main(int argc, char *argv[])
 
     SynoPS::registerTypes();
     SynoPS::registerQmlTypes();
-    engine.addImageProvider("syno", new SynoImageProvider(synoPS.conn()));
-    engine.addImportPath(GUI_PREFIX_PATH);
+    engine.addImportPath(QStringLiteral(GUI_PREFIX_PATH));
+
+    engine.addImageProvider(QStringLiteral("thumb"), new SynoImageProvider(synoPS.conn()));
 
     populateRootContext(engine.rootContext());
 

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef SYNOIMAGEPROVIDER_H
 #define SYNOIMAGEPROVIDER_H
 
@@ -27,7 +26,12 @@
 
 class SynoConn;
 
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+#include <QtQuick/private/qquickpixmapcache_p.h>
+class SynoImageProvider : public QObject, public QQuickImageProviderWithOptions
+#else
 class SynoImageProvider : public QObject, public QQuickAsyncImageProvider
+#endif
 {
     Q_OBJECT
 
@@ -44,7 +48,9 @@ public:
     Q_INVOKABLE void invalidateInCache(const QString& id);
 
     // ImageProvider API
-    QQuickImageResponse* requestImageResponse(const QString &id, const QSize &requestedSize) override;
+    QQuickImageResponse* requestImageResponse(const QString &id,
+                                              const QSize &requestedSize,
+                                              const QQuickImageProviderOptions &options) override;
 
 private:
     SynoConn* m_conn;

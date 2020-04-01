@@ -22,7 +22,7 @@
 #include <QByteArray>
 #include <QJSValue>
 #include <QObject>
-
+#include <QQmlEngine>
 
 class QNetworkAccessManager;
 
@@ -34,6 +34,9 @@ class SynoAuth : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(SynoAuth)
+
+    QML_ELEMENT
+    QML_UNCREATABLE("Use SynoConn to obtain an instance")
 
     Q_PROPERTY(SynoAuthStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(QString username READ username NOTIFY usernameChanged)
@@ -73,7 +76,7 @@ public:
     /*!
      *  \brief This method reloads cookies from permanent storage
      *
-     *  \param callbackSuccess JS callback to be executed on success. Expected signature: void()
+     *  \param callback JS callback to be executed on method completion (success or failure). Expected signature: void()
      *
      *  Session authorization is lost after call to this method.
      *

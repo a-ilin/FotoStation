@@ -23,8 +23,8 @@ SynoAlbumCache::SynoAlbumCache()
     : m_hitCount(0)
     , m_missCount(0)
 {
-    SynoSettings settings("performance");
-    int maximumCountItems = qBound(0, settings.value("ramAlbumCacheItems", 50).toInt(), std::numeric_limits<int>::max());
+    SynoSettings settings(QStringLiteral("performance"));
+    int maximumCountItems = qBound(0, settings.value(QStringLiteral("ramAlbumCacheItems"), 50).toInt(), std::numeric_limits<int>::max());
 
     m_cache = CacheType(maximumCountItems);
 }

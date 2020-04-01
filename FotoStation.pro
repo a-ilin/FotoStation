@@ -1,16 +1,35 @@
-QT += core core-private network quick quickcontrols2 widgets
-CONFIG += c++17 no_private_qt_headers_warning
+#
+# GNU General Public License (GPL)
+# Copyright (c) 2020 by Aleksei Ilin
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-# The following define makes your compiler emit warnings if you use
-# any Qt feature that has been marked deprecated (the exact warnings
-# depend on your compiler). Refer to the documentation for the
-# deprecated API to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
+TARGET = FotoStation
 
-# You can also make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-# You can also select to disable deprecated APIs only up to a certain version of Qt.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+QT += concurrent core core-private network quick quick-private quickcontrols2
+CONFIG += c++17 no_private_qt_headers_warning qmltypes
+
+# Check required Qt version
+REQUIRED_QT_VERSION=5.15.0
+!versionAtLeast(QT_VERSION, $${REQUIRED_QT_VERSION}): error("Use at least Qt version $${REQUIRED_QT_VERSION}")
+
+include(options.pri)
+
+# QML import module name to be registered
+QML_IMPORT_NAME = FotoStation.native
+QML_IMPORT_MAJOR_VERSION = 1
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH = gui
@@ -18,58 +37,10 @@ QML_IMPORT_PATH = gui
 # Additional import path used to resolve QML modules just for Qt Quick Designer
 QML_DESIGNER_IMPORT_PATH = gui
 
-# MSVC section
-msvc: {
-  # Use STD value for __cplusplus on MSVC
-  QMAKE_CXXFLAGS += /Zc:__cplusplus
-  # Generate ASM output
-  QMAKE_CXXFLAGS += /FAs
-}
-
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-HEADERS += \
-    src/cache.h \
-    src/qmlobjectwrapper.h \
-    src/synoalbum.h \
-    src/synoalbumcache.h \
-    src/synoalbumdata.h \
-    src/synoalbumfactory.h \
-    src/synoauth.h \
-    src/synoconn.h \
-    src/synoerror.h \
-    src/synoimagecache.h \
-    src/synoimageprovider.h \
-    src/synoimageprovider_p.h \
-    src/synops.h \
-    src/synoreplyjson.h \
-    src/synorequest.h \
-    src/synosettings.h \
-    src/synosize.h \
-    src/synosslconfig.h \
-    src/synotraits.h
-
-SOURCES += \
-    src/main.cpp \
-    src/qmlobjectwrapper.cpp \
-    src/synoalbum.cpp \
-    src/synoalbumcache.cpp \
-    src/synoalbumdata.cpp \
-    src/synoalbumfactory.cpp \
-    src/synoauth.cpp \
-    src/synoconn.cpp \
-    src/synoerror.cpp \
-    src/synoimagecache.cpp \
-    src/synoimageprovider.cpp \
-    src/synops.cpp \
-    src/synoreplyjson.cpp \
-    src/synorequest.cpp \
-    src/synosettings.cpp \
-    src/synosize.cpp \
-    src/synosslconfig.cpp
 
 CONFIG(release, debug|release): {
     DEFINES += GUI_PREFIX_PATH=\"\\\"qrc:\\\"\"
@@ -80,10 +51,4 @@ CONFIG(debug, debug|release): {
     DEFINES += GUI_PREFIX_PATH=\"\\\"file:///"$$_PRO_FILE_PWD_"/gui\\\"\"
 }
 
-# Enable keychain by default
-DEFINES += USE_KEYCHAIN
-contains(DEFINES, USE_KEYCHAIN) {
-    !include($$_PRO_FILE_PWD_/3rdParty/qtkeychain/qt5keychain.pri) {
-        error("Submodule qtkeychain not found. Please run command 'git submodule update --init --recursive' to initialize submodules")
-    }
-}
+include(src/src.pri)

@@ -18,9 +18,18 @@ Currently the supported environment is Windows + MSVC. Other platforms are expec
 
 1. Install Qt SDK for Desktop apps: [https://www.qt.io/]
 
-2. Follow usual steps to build Qt-based applications:
+2. Update submodules for this repository:
 ```bat
-cd FotoStation
+git submodule update --init --recursive
+```
+
+3. (Optional) Set environment variable pointing to LittleCMS:
+```bat
+set LCMS2_ROOT=C:\Path\to\lcms2\directory
+```
+
+4. Follow usual steps to build Qt-based applications:
+```bat
 qmake
 nmake
 ```
@@ -36,6 +45,11 @@ nmake
 ## 3rd party components
 
   The application is based on Qt framework, which licensing includes GPL: [https://www.qt.io/licensing/]
+
+  The application uses additional libraries:
+  - qtkeychain: [https://github.com/frankosterfeld/qtkeychain] , license: (https://github.com/frankosterfeld/qtkeychain/blob/master/COPYING?raw=true)
+
+  - Little CMS: [http://www.littlecms.com] , licensed under MIT
 
   The application uses some visual assets provided under different licenses.
   - Flaticon license by [shareicon.net]:

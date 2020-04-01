@@ -21,6 +21,7 @@
 
 #include <QJSValue>
 #include <QObject>
+#include <QQmlEngine>
 #include <QSettings>
 #include <QVariant>
 
@@ -36,6 +37,9 @@ class DeletePasswordJob;
 class SynoSettings : public QObject
 {
     Q_OBJECT
+
+    QML_ELEMENT
+
     Q_PROPERTY(QString group READ group WRITE setGroup NOTIFY groupChanged)
 
 public:

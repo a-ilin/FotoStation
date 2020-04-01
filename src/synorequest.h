@@ -27,12 +27,16 @@
 #include <QNetworkRequest>
 #include <QObject>
 #include <QPointer>
+#include <QQmlEngine>
 
 class SynoConn;
 
 class SynoRequest : public QObject
 {
     Q_OBJECT
+
+    QML_ELEMENT
+    QML_UNCREATABLE("Use SynoConn to obtain an instance")
 
     Q_PROPERTY(QByteArray contentEncoding READ contentEncoding NOTIFY contentTypeChanged)
     Q_PROPERTY(QMimeType contentMimeType READ contentMimeType NOTIFY contentTypeChanged)

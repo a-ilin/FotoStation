@@ -23,9 +23,9 @@ SynoImageCache::SynoImageCache()
     : m_hitCount(0)
     , m_missCount(0)
 {
-    SynoSettings settings("performance");
-    int maximumSizeMb = qBound(0, settings.value("ramImageCacheMb", 150).toInt() * 1024 * 1024, std::numeric_limits<int>::max());
-    int maximumCountItems = qBound(0, settings.value("ramImageCacheItems", 5000).toInt(), std::numeric_limits<int>::max());
+    SynoSettings settings(QStringLiteral("performance"));
+    int maximumSizeMb = qBound(0, settings.value(QStringLiteral("ramImageCacheMb"), 150).toInt() * 1024 * 1024, std::numeric_limits<int>::max());
+    int maximumCountItems = qBound(0, settings.value(QStringLiteral("ramImageCacheItems"), 5000).toInt(), std::numeric_limits<int>::max());
 
     m_cache = CacheType(maximumSizeMb, maximumCountItems);
 }

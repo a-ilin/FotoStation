@@ -20,6 +20,7 @@
 #define SYNOSSLCONFIG_H
 
 #include <QObject>
+#include <QQmlEngine>
 
 class QNetworkAccessManager;
 
@@ -30,6 +31,9 @@ class SynoSslConfig : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(SynoSslConfig)
+
+    QML_ELEMENT
+    QML_UNCREATABLE("Use SynoConn to obtain an instance")
 
     Q_PROPERTY(bool isSslAvailable READ isSslAvailable NOTIFY isSslAvailableChanged)
     Q_PROPERTY(bool isSslError READ isSslError NOTIFY isSslErrorChanged)

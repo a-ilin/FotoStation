@@ -23,12 +23,16 @@
 #include "synoimageprovider.h"
 #include "synorequest.h"
 
+#include <QColorSpace>
 #include <QQuickImageResponse>
 
 class SynoImageResponse : public QQuickImageResponse
 {
 public:
-    SynoImageResponse(SynoImageProvider* provider, const QByteArray& id, const QSize& size);
+    SynoImageResponse(SynoImageProvider* provider,
+                      const QByteArray& id,
+                      const QSize& size,
+                      const QQuickImageProviderOptions& options);
 
     void load();
 
@@ -49,6 +53,7 @@ protected:
     SynoImageProvider* m_provider;
     QByteArray m_id;
     QSize m_size;
+    QQuickImageProviderOptions m_options;
     QString m_errorString;
     QImage m_image;
     std::shared_ptr<SynoRequest> m_req;

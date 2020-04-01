@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
+import QtQuick 2.15
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 
 Loader {
     id: root
@@ -35,14 +36,14 @@ Loader {
 
     Connections {
         target: root
-        onStatusChanged: {
+        function onStatusChanged() {
             internal.processStatusChange();
         }
     }
 
     Connections {
         target: root.item
-        onIsReadyChanged: {
+        function onIsReadyChanged() {
             internal.processStatusChange();
         }
     }

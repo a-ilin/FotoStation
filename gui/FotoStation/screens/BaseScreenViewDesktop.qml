@@ -17,12 +17,13 @@
  */
 
 
-import QtQuick 2.13
+import QtQuick 2.15
 import QtQuick.Controls 1.4 as Controls_1
-import QtQuick.Controls 2.13
+import QtQuick.Controls 2.15
 
 import FotoStation 1.0
 import FotoStation.assets 1.0
+import FotoStation.native 1.0
 import FotoStation.widgets 1.0
 
 FocusScope {
@@ -63,6 +64,8 @@ FocusScope {
             Rectangle {
                 color: Assets.appPalette.shadow
 
+                SplitView.minimumHeight: Math.min(root.height / 2, 200)
+
                 Controls_1.TreeView {
                     anchors.fill: parent
                     anchors.margins: 1
@@ -78,7 +81,7 @@ FocusScope {
                     anchors.fill: parent
                     anchors.margins: 1
                     image.sourceSize.width: width
-                    image.source: Facade.coverUrl(_albumView.selectedImageId)
+                    image.source: Facade.thumbUrl(_albumView.selectedImageId)
                     image.fillMode: Image.PreserveAspectFit
                 }
             }

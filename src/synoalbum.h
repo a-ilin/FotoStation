@@ -22,6 +22,7 @@
 #include <memory>
 
 #include <QAbstractListModel>
+#include <QQmlEngine>
 
 #include "synoalbumdata.h"
 
@@ -30,6 +31,9 @@ class SynoConn;
 class SynoAlbum : public QAbstractListModel
 {
     Q_OBJECT
+
+    QML_ELEMENT
+    QML_UNCREATABLE("Use SynoAlbumFactory to obtain an instance")
 
     Q_PROPERTY(SynoAlbumData synoData READ synoData NOTIFY synoDataChanged)
     Q_PROPERTY(QString path READ path NOTIFY pathChanged)

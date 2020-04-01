@@ -18,9 +18,10 @@
 
 pragma Singleton
 
-import QtQuick 2.13
+import QtQuick 2.15
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 
 QtObject {
     id: root
@@ -40,9 +41,9 @@ QtObject {
                                               SynoAuth.ATTEMPT_USER].indexOf(SynoPS.conn.auth.status) !== -1)
                                          || autoLoginAllowed
 
-    function coverUrl(albumId) {
-        if (albumId && albumId !== "") {
-            return "image://syno/" + SynoPS.toString(albumId);
+    function thumbUrl(thumbId) {
+        if (thumbId && thumbId !== "") {
+            return "image://thumb/" + SynoPS.toString(thumbId);
         }
         return "";
     }

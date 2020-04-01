@@ -16,11 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.13
-import QtQuick.Controls 2.13
-import QtQuick.Layouts 1.13
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 import FotoStation 1.0
+import FotoStation.native 1.0
 import FotoStation.widgets 1.0
 
 Item {
@@ -214,7 +215,7 @@ Item {
 
     Connections {
         target: SynoPS.conn
-        onStatusChanged: {
+        function onStatusChanged() {
             if (SynoPS.conn.status === SynoConn.API_LOADED) {
                 SynoPS.conn.auth.authorizeWithCookie();
             }
@@ -223,7 +224,7 @@ Item {
 
     Connections {
         target: SynoPS.conn.auth
-        onStatusChanged: {
+        function onStatusChanged() {
             if (SynoPS.conn.auth.status === SynoAuth.WAIT_USER) {
                 if (_username.text.length > 0 && _password.text.length > 0) {
                     SynoPS.conn.auth.authorizeWithCredentials(_username.text, _password.text);
@@ -236,7 +237,7 @@ Item {
 
     Connections {
         target: SynoPS.conn.sslConfig
-        onConfirmedSslExceptions: {
+        function onConfirmedSslExceptions() {
             internal.connectToSyno(true);
         }
     }
@@ -307,7 +308,7 @@ Item {
         /*! This function parses given url into form fields */
         function urlToForm(synoUrl) {
             let urlObj = SynoPS.urlToMap(synoUrl);
-            console.warn("URL: ", JSON.stringify(urlObj))
+            console.debug("Read URL: ", JSON.stringify(urlObj))
 
             _secureConnection.checked = urlObj.protocol === "https";
 
