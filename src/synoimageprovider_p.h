@@ -85,7 +85,7 @@ protected:
     void processNetworkRequest();
     void postProcessImage();
 
-    QByteArray synoThumbSize() const;
+    void updateSynoThumbSize();
 
 protected slots:
     void onCacheCheckFinished(bool success);
@@ -94,6 +94,7 @@ protected:
     SynoImageProvider* m_provider;
     QByteArray m_id;
     QSize m_size;
+    QByteArray m_synoSize;
     QQuickImageProviderOptions m_options;
     QString m_errorString;
     QImage m_image;

@@ -25,16 +25,31 @@
 #include <QString>
 #include <QSize>
 
+struct SynoImageCacheKey
+{
+    bool operator==(const SynoImageCacheKey& o) const {
+        return id == o.id
+            && synoSize == o.synoSize;
+    }
+
+    QString id;
+    QByteArray synoSize;
+};
+
+inline uint qHash(const SynoImageCacheKey& key) {
+    return qHash(key.id) ^ qHash(key.synoSize);
+}
+
 class SynoImageCache
 {
-    using CacheType = Cache< QString, QImage >;
+    using CacheType = Cache< SynoImageCacheKey, QImage >;
 
 public:
     SynoImageCache();
 
-    QImage object(const QString& url, const QSize& minimumSize);
-    void insert(const QString& url, const QImage& image);
-    void remove(const QString& url);
+    QImage object(const QString& url,  const QByteArray& sizeId);
+    void insert(const QString& url, const QByteArray& sizeId, const QImage& image);
+    void remove(const QString& url, const QByteArray& sizeId);
     void clear();
 
     /*! Returns amount of images in cache */

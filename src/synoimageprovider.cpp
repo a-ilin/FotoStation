@@ -31,6 +31,11 @@
 
 #include <functional>
 
+// supported sizes
+static QByteArray g_synoSizeSmall = QByteArrayLiteral("small");
+static QByteArray g_synoSizeLarge = QByteArrayLiteral("large");
+
+
 SynoImageProvider::SynoImageProvider(SynoConn* conn)
     : QObject(*(new SynoImageProviderPrivate()), nullptr)
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
@@ -70,7 +75,8 @@ void SynoImageProvider::invalidateInCache(const QString& id)
     Q_D(SynoImageProvider);
 
     SynoImageProviderPrivate::CacheLocker cacheLocker(d);
-    cacheLocker.cache().remove(id);
+    cacheLocker.cache().remove(id, g_synoSizeSmall);
+    cacheLocker.cache().remove(id, g_synoSizeLarge);
 }
 
 QQuickImageResponse* SynoImageProvider::requestImageResponse(const QString& id,
@@ -108,6 +114,8 @@ void SynoImageResponse::load()
         });
 
         m_future = QtConcurrent::run([this]() {
+            updateSynoThumbSize();
+
             if (loadFromCache()) {
                 postProcessImage();
                 emit cacheCheckFinished(true);
@@ -125,7 +133,7 @@ void SynoImageResponse::sendRequest()
     QByteArrayList formData;
     formData << QByteArrayLiteral("method=get");
     formData << QByteArrayLiteral("version=1");
-    formData << QByteArrayLiteral("size=") + synoThumbSize();
+    formData << QByteArrayLiteral("size=") + m_synoSize;
     formData << QByteArrayLiteral("id=") + m_id;
 
     Q_ASSERT(!m_req);
@@ -199,7 +207,7 @@ void SynoImageResponse::setErrorString(const QString& err)
 bool SynoImageResponse::loadFromCache()
 {
     SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
-    QImage image = cacheLocker.cache().object(m_id, m_size);
+    QImage image = cacheLocker.cache().object(m_id, m_synoSize);
     if (!image.isNull()) {
         m_image = image;
         return true;
@@ -232,7 +240,7 @@ void SynoImageResponse::processNetworkRequest()
     if (reader.read(&m_image) && !m_image.isNull()) {
         // save to cache
         SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
-        cacheLocker.cache().insert(m_id, m_image);
+        cacheLocker.cache().insert(m_id, m_synoSize, m_image);
     } else {
         QString readerError = reader.errorString();
         if (!readerError.isEmpty()) {
@@ -257,14 +265,14 @@ void SynoImageResponse::postProcessImage()
     ColorHandler::convertColorSpace(m_image, m_image.colorSpace(), m_options.targetColorSpace());
 }
 
-QByteArray SynoImageResponse::synoThumbSize() const
+void SynoImageResponse::updateSynoThumbSize()
 {
     SynoSizeGadget::SynoSize synoSize = SynoSizeGadget::instance().fitSyno(m_size.height(), m_size.width());
     if (synoSize <= SynoSizeGadget::SIZE_M) {
-        return QByteArrayLiteral("small");
+        m_synoSize = g_synoSizeSmall;
+    } else {
+        m_synoSize = g_synoSizeLarge;
     }
-
-    return QByteArrayLiteral("large");
 }
 
 void SynoImageResponse::onCacheCheckFinished(bool success)
