@@ -32,17 +32,23 @@
 #include <functional>
 
 SynoImageProvider::SynoImageProvider(SynoConn* conn)
-    : QObject()
+    : QObject(*(new SynoImageProviderPrivate()), nullptr)
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     , QQuickImageProviderWithOptions(ImageResponse, ForceAsynchronousImageLoading)
 #else
     , QQuickAsyncImageProvider()
 #endif
-    , m_conn(conn)
 {
+    Q_D(SynoImageProvider);
+
+    d->conn = conn;
+
+    d->thread.setObjectName(QStringLiteral("SynoImageProviderThread"));
+    d->thread.start();
+
     QTimer* cacheStatisticTimer = new QTimer(this);
     connect(cacheStatisticTimer, &QTimer::timeout, this, [this]() {
-        SynoImageProvider::CacheLocker cacheLocker(this);
+        SynoImageProviderPrivate::CacheLocker cacheLocker(d_func());
         SynoImageCache& cache = cacheLocker.cache();
         qDebug() << tr("Image cache statistics. Count: %1. Cost (KB): %2. Hit: %3. Miss: %4.")
                     .arg(cache.count()).arg(cache.totalCost() / 1024)
@@ -51,14 +57,19 @@ SynoImageProvider::SynoImageProvider(SynoConn* conn)
     cacheStatisticTimer->start(60000);
 }
 
-SynoConn* SynoImageProvider::conn() const
+SynoImageProvider::~SynoImageProvider()
 {
-    return m_conn;
+    Q_D(SynoImageProvider);
+
+    d->thread.quit();
+    d->thread.wait();
 }
 
 void SynoImageProvider::invalidateInCache(const QString& id)
 {
-    SynoImageProvider::CacheLocker cacheLocker(this);
+    Q_D(SynoImageProvider);
+
+    SynoImageProviderPrivate::CacheLocker cacheLocker(d);
     cacheLocker.cache().remove(id);
 }
 
@@ -66,7 +77,10 @@ QQuickImageResponse* SynoImageProvider::requestImageResponse(const QString& id,
                                                              const QSize& requestedSize,
                                                              const QQuickImageProviderOptions& options)
 {
+    Q_D(SynoImageProvider);
+
     SynoImageResponse* response = new SynoImageResponse(this, id.toLatin1(), requestedSize, options);
+    response->moveToThread(&d->thread);
     QTimer::singleShot(0, response, &SynoImageResponse::load);
     return response;
 }
@@ -79,16 +93,30 @@ SynoImageResponse::SynoImageResponse(SynoImageProvider* provider,
     , m_id(id)
     , m_size(size)
     , m_options(options)
+    , m_cancelStatus(Status_NotCancelled)
 {
 }
 
 void SynoImageResponse::load()
 {
-    if (loadFromCache()) {
-        postProcessImage();
-        emit finished();
+    // it could be cancelled already
+
+    CancelStatus cancel(Status_Cancelled);
+    if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+        connect(this, &SynoImageResponse::cacheCheckFinished, this, [this](bool success) {
+            onCacheCheckFinished(success);
+        });
+
+        m_future = QtConcurrent::run([this]() {
+            if (loadFromCache()) {
+                postProcessImage();
+                emit cacheCheckFinished(true);
+            } else {
+                emit cacheCheckFinished(false);
+            }
+        });
     } else {
-        sendRequest();
+        emit finished();
     }
 }
 
@@ -101,22 +129,38 @@ void SynoImageResponse::sendRequest()
     formData << QByteArrayLiteral("id=") + m_id;
 
     Q_ASSERT(!m_req);
-    m_req = m_provider->conn()->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Thumb"), formData);
+    m_req = m_provider->d_func()->conn->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Thumb"), formData);
+
+    connect(this, &SynoImageResponse::requestCancelled, this, [this]() {
+        // it is safe to check here, as this code runs in object's thread
+        if (!m_future.isRunning()) {
+            emit finished();
+        }
+    });
+
     m_req->send(this, [this] {
-        if (!m_req->errorString().isEmpty()) {
-            setErrorString(tr("Network error: %1.").arg(m_req->errorString()));
-        } else {
-            if (m_req->contentType() == SynoRequest::TEXT) {
-                // some syno error happened
-                SynoReplyJSON replyJSON(m_req.get());
-                if (!replyJSON.errorString().isEmpty()) {
-                    setErrorString(tr("Syno error: %1.").arg(replyJSON.errorString()));
-                } else {
-                    setErrorString(tr("Unknown Syno error."));
-                }
+        CancelStatus cancel(Status_Cancelled);
+        if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+
+            if (!m_req->errorString().isEmpty()) {
+                setErrorString(tr("Network error: %1.").arg(m_req->errorString()));
             } else {
-                processNetworkRequest();
-                postProcessImage();
+                if (m_req->contentType() == SynoRequest::TEXT) {
+                    // some syno error happened
+                    SynoReplyJSON replyJSON(m_req.get());
+                    if (!replyJSON.errorString().isEmpty()) {
+                        setErrorString(tr("Syno error: %1.").arg(replyJSON.errorString()));
+                    } else {
+                        setErrorString(tr("Unknown Syno error."));
+                    }
+                } else {
+                    m_future = QtConcurrent::run([this]() {
+                        processNetworkRequest();
+                        postProcessImage();
+                        emit finished();
+                    });
+                    return;
+                }
             }
         }
 
@@ -136,12 +180,13 @@ QString SynoImageResponse::errorString() const
 
 void SynoImageResponse::cancel()
 {
-    if (m_req) {
-        Q_ASSERT(m_image.isNull());
-        m_req->cancel();
+    CancelStatus cancel(Status_NotCancelled);
+    if (m_cancelStatus.compare_exchange_strong(cancel, Status_Cancelled)) {
+        if (m_req) {
+            m_req->cancel();
+            emit requestCancelled();
+        }
     }
-
-    emit finished();
 }
 
 void SynoImageResponse::setErrorString(const QString& err)
@@ -153,7 +198,7 @@ void SynoImageResponse::setErrorString(const QString& err)
 
 bool SynoImageResponse::loadFromCache()
 {
-    SynoImageProvider::CacheLocker cacheLocker(m_provider);
+    SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
     QImage image = cacheLocker.cache().object(m_id, m_size);
     if (!image.isNull()) {
         m_image = image;
@@ -186,7 +231,7 @@ void SynoImageResponse::processNetworkRequest()
 
     if (reader.read(&m_image) && !m_image.isNull()) {
         // save to cache
-        SynoImageProvider::CacheLocker cacheLocker(m_provider);
+        SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
         cacheLocker.cache().insert(m_id, m_image);
     } else {
         QString readerError = reader.errorString();
@@ -222,18 +267,32 @@ QByteArray SynoImageResponse::synoThumbSize() const
     return QByteArrayLiteral("large");
 }
 
-SynoImageProvider::CacheLocker::CacheLocker(SynoImageProvider* provider)
-    : m_provider(provider)
+void SynoImageResponse::onCacheCheckFinished(bool success)
 {
-    m_provider->m_imageCacheMutex.lock();
+    if (success) {
+        emit finished();
+    } else {
+        CancelStatus cancel(Status_Cancelled);
+        if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+            sendRequest();
+        } else {
+            emit finished();
+        }
+    }
 }
 
-SynoImageProvider::CacheLocker::~CacheLocker()
+SynoImageProviderPrivate::CacheLocker::CacheLocker(SynoImageProviderPrivate* d)
+    : m_d(d)
 {
-    m_provider->m_imageCacheMutex.unlock();
+    m_d->imageCacheMutex.lock();
 }
 
-SynoImageCache& SynoImageProvider::CacheLocker::cache()
+SynoImageProviderPrivate::CacheLocker::~CacheLocker()
 {
-    return m_provider->m_imageCache;
+    m_d->imageCacheMutex.unlock();
+}
+
+SynoImageCache& SynoImageProviderPrivate::CacheLocker::cache()
+{
+    return m_d->imageCache;
 }

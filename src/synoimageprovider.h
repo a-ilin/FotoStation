@@ -19,12 +19,11 @@
 #ifndef SYNOIMAGEPROVIDER_H
 #define SYNOIMAGEPROVIDER_H
 
-#include "synoimagecache.h"
-
-#include <QMutex>
 #include <QQuickAsyncImageProvider>
 
+class SynoImageCache;
 class SynoConn;
+class SynoImageProviderPrivate;
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include <QtQuick/private/qquickpixmapcache_p.h>
@@ -34,15 +33,14 @@ class SynoImageProvider : public QObject, public QQuickAsyncImageProvider
 #endif
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(SynoImageProvider)
 
 public:
-    class CacheLocker;
+    friend class SynoImageResponse;
 
 public:
     SynoImageProvider(SynoConn* conn);
-
-    /*! Returns assigned connection object */
-    SynoConn* conn() const;
+    ~SynoImageProvider();
 
     /*! Invalidates cached image by id */
     Q_INVOKABLE void invalidateInCache(const QString& id);
@@ -51,27 +49,6 @@ public:
     QQuickImageResponse* requestImageResponse(const QString &id,
                                               const QSize &requestedSize,
                                               const QQuickImageProviderOptions &options) override;
-
-private:
-    SynoConn* m_conn;
-    // NOTE: SynoImageCache is not thread-safe
-    QMutex m_imageCacheMutex;
-    SynoImageCache m_imageCache;
 };
-
-class SynoImageProvider::CacheLocker
-{
-    Q_DISABLE_COPY(SynoImageProvider::CacheLocker)
-
-public:
-    CacheLocker(SynoImageProvider* provider);
-    ~CacheLocker();
-
-    SynoImageCache& cache();
-
-private:
-    SynoImageProvider* m_provider;
-};
-
 
 #endif // SYNOIMAGEPROVIDER_H

@@ -20,14 +20,48 @@
 #ifndef SYNOIMAGEPROVIDER_P_H
 #define SYNOIMAGEPROVIDER_P_H
 
+#include "synoimagecache.h"
 #include "synoimageprovider.h"
 #include "synorequest.h"
 
+#include <QtConcurrent>
 #include <QColorSpace>
+#include <QMutex>
 #include <QQuickImageResponse>
+#include <QThread>
+
+#include <QtCore/private/qobject_p.h>
+
+#include <atomic>
+
+class SynoImageProviderPrivate : public QObjectPrivate
+{
+public:
+    class CacheLocker;
+
+public:
+    SynoImageProviderPrivate()
+        : QObjectPrivate() {}
+
+public:
+    SynoConn* conn = nullptr;
+
+    // NOTE: SynoImageCache is not thread-safe
+    QMutex imageCacheMutex;
+    SynoImageCache imageCache;
+    QThread thread;
+};
 
 class SynoImageResponse : public QQuickImageResponse
 {
+    Q_OBJECT
+
+    enum CancelStatus {
+        Status_NotCancelled = 0,
+        Status_Cancelled,
+        Statuc_CancelledConfirmed
+    };
+
 public:
     SynoImageResponse(SynoImageProvider* provider,
                       const QByteArray& id,
@@ -40,6 +74,10 @@ public:
     QString errorString() const override;
     void cancel() override;
 
+signals:
+    void cacheCheckFinished(bool success);
+    void requestCancelled();
+
 protected:
     void setErrorString(const QString& err);
     bool loadFromCache();
@@ -49,6 +87,9 @@ protected:
 
     QByteArray synoThumbSize() const;
 
+protected slots:
+    void onCacheCheckFinished(bool success);
+
 protected:
     SynoImageProvider* m_provider;
     QByteArray m_id;
@@ -57,6 +98,23 @@ protected:
     QString m_errorString;
     QImage m_image;
     std::shared_ptr<SynoRequest> m_req;
+
+    QFuture<void> m_future;
+    std::atomic<CancelStatus> m_cancelStatus;
+};
+
+class SynoImageProviderPrivate::CacheLocker
+{
+    Q_DISABLE_COPY(SynoImageProviderPrivate::CacheLocker)
+
+public:
+    CacheLocker(SynoImageProviderPrivate* d);
+    ~CacheLocker();
+
+    SynoImageCache& cache();
+
+private:
+    SynoImageProviderPrivate* m_d;
 };
 
 #endif // SYNOIMAGEPROVIDER_P_H
