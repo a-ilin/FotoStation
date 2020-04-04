@@ -1,0 +1,7 @@
+module screens
+AlbumView 1.0 AlbumView.qml
+BaseScreenViewDesktop 1.0 BaseScreenViewDesktop.qml
+DebugView 1.0 DebugView.qml
+Footer 1.0 Footer.qml
+FullScreenView 1.0 FullScreenView.qml
+LoginView 1.0 LoginView.qml

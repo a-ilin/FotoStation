@@ -51,10 +51,10 @@ Rectangle {
 
         AnimatedImage {
             id: _connectionProgressImage
-            height: 16
-            width: 16
+            height: parent.height
             asynchronous: true
-            source: Facade.isConnecting ? Assets.animated.roller_16 : ""
+            source: Facade.isConnecting ? Assets.assetForSize(Assets.animated.roller, height) : ""
+            fillMode: Image.PreserveAspectFit
         }
 
         Rectangle {

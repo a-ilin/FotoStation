@@ -35,6 +35,14 @@ Item {
         group: "connection"
     }
 
+    Keys.onPressed: {
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            if (internal.isFormValid) {
+                internal.connectToSyno();
+            }
+        }
+    }
+
     GroupBox {
         id: _groupBox
 

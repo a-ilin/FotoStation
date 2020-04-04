@@ -31,6 +31,15 @@ ApplicationWindow {
 
     readonly property alias colorHandler: _colorHandler
 
+    function openFullscreen(component) {
+        _fullScreenWindowLoader.sourceComponent = component;
+    }
+
+    function closeFullscreen() {
+        _fullScreenWindow.visibility = Window.Hidden;
+        _fullScreenWindowLoader.sourceComponent = undefined;
+    }
+
     visible: false
 
     width: 800
@@ -134,6 +143,29 @@ ApplicationWindow {
 
         Component.onCompleted: {
             setSource(internal.overlayManagerUrl);
+        }
+    }
+
+    Window {
+        id: _fullScreenWindow
+
+        modality: Qt.WindowModal
+        visible: false
+
+        Loader {
+            id: _fullScreenWindowLoader
+            anchors.fill: parent
+
+            onLoaded: {
+                _fullScreenWindow.visibility = Window.FullScreen;
+            }
+
+            Connections {
+                target: _fullScreenWindowLoader.item
+                function onClosed() {
+                    root.closeFullscreen();
+                }
+            }
         }
     }
 

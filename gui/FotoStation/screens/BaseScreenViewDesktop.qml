@@ -80,9 +80,10 @@ FocusScope {
                 FSCoverArt {
                     anchors.fill: parent
                     anchors.margins: 1
-                    image.sourceSize.width: width
-                    image.source: Facade.thumbUrl(_albumView.selectedImageId)
-                    image.fillMode: Image.PreserveAspectFit
+                    sourceSizeHeight: height
+                    sourceSizeWidth: width
+                    source: Facade.coverThumbUrl(_albumView.selectedImageId)
+                    fillMode: Image.PreserveAspectFit
                 }
             }
         }
@@ -107,6 +108,7 @@ FocusScope {
 
                 Component.onCompleted: {
                     setAlbumWrapper(SynoAlbumFactory.createAlbumForPath());
+                    forceActiveFocus();
                 }
             }
         }

@@ -41,11 +41,17 @@ QtObject {
                                               SynoAuth.ATTEMPT_USER].indexOf(SynoPS.conn.auth.status) !== -1)
                                          || autoLoginAllowed
 
-    function thumbUrl(thumbId) {
+    function coverThumbUrl(thumbId) {
         if (thumbId && thumbId !== "") {
             return "image://thumb/" + SynoPS.toString(thumbId);
         }
         return "";
     }
 
+    function coverFullUrl(thumbId) {
+        if (thumbId && thumbId !== "") {
+            return "image://full/" + SynoPS.toString(thumbId);
+        }
+        return "";
+    }
 }

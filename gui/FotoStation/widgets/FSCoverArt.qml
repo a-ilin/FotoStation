@@ -25,32 +25,59 @@ import FotoStation.native 1.0
 Item {
     id: root
 
-    property alias image: _coverImage
+    property url source
+    property url backupSource
+    property int fillMode: Image.PreserveAspectFit
+    property int sourceSizeWidth
+    property int sourceSizeHeight
 
+    readonly property bool isEmpty: _coverImage.status === Image.Null
     readonly property bool isError: _coverImage.status === Image.Error
+    readonly property bool isLoading: _coverImage.status === Image.Loading
     readonly property bool isLoaded: _coverImage.status === Image.Ready
+
+    readonly property bool isBackupEmpty: _backupImage.status === Image.Null
+    readonly property bool isBackupError: _backupImage.status === Image.Error
+    readonly property bool isBackupLoading: _backupImage.status === Image.Loading
+    readonly property bool isBackupLoaded: _backupImage.status === Image.Ready
+
+    ImageAdvanced {
+        id: _backupImage
+        anchors.fill: parent
+        fillMode: root.fillMode
+        smooth: true
+        asynchronous: true
+        windowColorSpace: colorHandler.colorSpace
+        visible: !root.isLoaded
+        source: root.backupSource
+        sourceSize.height: root.sourceSizeHeight
+        sourceSize.width: root.sourceSizeWidth
+    }
 
     ImageAdvanced {
         id: _coverImage
         anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        clip: true
+        fillMode: root.fillMode
         smooth: true
         asynchronous: true
         windowColorSpace: colorHandler.colorSpace
+        source: root.source
+        sourceSize.height: root.sourceSizeHeight
+        sourceSize.width: root.sourceSizeWidth
     }
 
     FSIcon {
         id: _errorIcon
         anchors.centerIn: parent
-        source: Assets.icons.broken_document_32
-        visible: root.isError
+        source: Assets.assetForSize(Assets.icons.broken_document, Math.min(root.height, root.width))
+        visible: (root.isBackupError || root.isBackupEmpty) && root.isError
     }
 
     AnimatedImage {
         id: _loadingIndicator
         asynchronous: true
-        source: !root.isError && !root.isLoaded ? Assets.animated.roller_32 : ""
+        source: !root.isLoaded && !root.isBackupLoaded && (root.isLoading || root.isBackupLoading)
+                ? Assets.assetForSize(Assets.animated.roller, Math.min(root.height, root.width)) : ""
         visible: false
     }
 

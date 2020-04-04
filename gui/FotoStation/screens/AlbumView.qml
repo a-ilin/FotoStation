@@ -41,31 +41,6 @@ FocusScope {
     /*! This property holds current item of the view */
     readonly property alias currentItem: _view.currentItem
 
-    /*! This signal is emitted when user requests photo opening */
-    signal openPhotoRequested(var index);
-
-    /*! This signal is emitted when user requests video opening */
-    signal openVideoRequested(var index);
-
-    /*! This method opens item at the specified index */
-    function openItem(index) {
-        var synoData = root.synoAlbum.get(index);
-        switch (synoData.type) {
-        case "album":
-            internal.openAlbum(index);
-            break;
-        case "photo":
-            openPhotoRequested(index);
-            break;
-        case "video":
-            openVideoRequested(index);
-            break;
-        default:
-            console.warn(qsTr("Unknown item type at index: "), index, synoData);
-            break;
-        }
-    }
-
     /*! This method assigns album wrapper object */
     function setAlbumWrapper(albumWrapper, forceRefresh) {
         if (albumWrapper.object) {
@@ -76,6 +51,35 @@ FocusScope {
     }
 
     focus: true
+
+    Keys.forwardTo: _view
+    Keys.onPressed: {
+        switch (event.key) {
+        case Qt.Key_Return:
+        case Qt.Key_Enter:
+            internal.openCurrentIndex();
+            event.accepted = true;
+            break;
+        case Qt.Key_Home:
+            _view.currentIndex = 0;
+            event.accepted = true;
+            break;
+        case Qt.Key_End:
+            _view.currentIndex = Math.max(0, _view.count - 1);
+            event.accepted = true;
+            break;
+        case Qt.Key_PageUp:
+            _view.currentIndex = Math.max(0, _view.currentIndex - _view.visibleItemCount);
+            event.accepted = true;
+            break;
+        case Qt.Key_PageDown:
+            _view.currentIndex = Math.min(_view.count - 1, _view.currentIndex + _view.visibleItemCount);
+            event.accepted = true;
+            break;
+        default:
+            break;
+        }
+    }
 
     TextMetrics {
         id: _albumTitleMetrics
@@ -143,22 +147,6 @@ FocusScope {
             active: true
         }
 
-        Keys.onPressed: {
-            if (event.key === Qt.Key_Enter) {
-                root.openItem(currentIndex);
-            } else if (event.key === Qt.Key_Home) {
-                currentIndex = 0;
-                event.accepted = true;
-            } else if (event.key === Qt.Key_End) {
-                currentIndex = Math.max(0, count - 1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_PageUp) {
-                currentIndex = Math.max(0, currentIndex - visibleItemCount);
-            } else if (event.key === Qt.Key_PageDown) {
-                currentIndex = Math.min(_view.count - 1, currentIndex + visibleItemCount);
-            }
-        }
-
         model: root.synoAlbum
         delegate: Rectangle {
             id: _delegate
@@ -178,8 +166,10 @@ FocusScope {
                 anchors.topMargin: _view.border
                 anchors.bottom: _albumTitle.top
                 anchors.bottomMargin: _view.border
-                image.sourceSize.width: width
-                image.source: Facade.thumbUrl(imageId)
+                sourceSizeHeight: height
+                sourceSizeWidth: width
+                source: Facade.coverThumbUrl(imageId)
+                fillMode: Image.PreserveAspectCrop
             }
 
             Rectangle {
@@ -211,13 +201,15 @@ FocusScope {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
+                    _view.forceActiveFocus();
                     _view.currentIndex = index;
                     _view.positionViewAtIndex(index, GridView.Contain);
                 }
                 onDoubleClicked: {
+                    _view.forceActiveFocus();
                     _view.currentIndex = index;
                     _view.positionViewAtIndex(index, GridView.Contain);
-                    root.openItem(index);
+                    internal.openCurrentIndex();
                 }
             }
         }
@@ -232,7 +224,7 @@ FocusScope {
         AnimatedImage {
             id: _loadingIndicator
             asynchronous: true
-            source: _view.count === 0 ? Assets.animated.roller_64 : ""
+            source: _view.count === 0 ? Assets.assetForSize(Assets.animated.roller, Math.min(_view.height, _view.width)) : ""
             visible: false
         }
 
@@ -246,15 +238,38 @@ FocusScope {
         }
     }
 
+    Component {
+        id: _fullScreenView
+
+        FullScreenView {
+            albumView: root
+
+            Component.onCompleted: {
+                open();
+            }
+        }
+    }
+
     QtObject {
         id: internal
 
         property var synoAlbumWrapper: null
 
-        function openAlbum(index) {
-            var synoData = root.synoAlbum.get(index);
-            var albumWrapper = SynoAlbumFactory.createAlbumForData(synoData);
-            root.setAlbumWrapper(albumWrapper);
+        function openCurrentIndex() {
+            var synoData = root.synoAlbum.get(_view.currentIndex);
+            switch (synoData.type) {
+            case "album":
+                let albumWrapper = SynoAlbumFactory.createAlbumForData(synoData);
+                root.setAlbumWrapper(albumWrapper);
+                break;
+            case "photo":
+            case "video":
+                openFullscreen(_fullScreenView);
+                break;
+            default:
+                console.warn(qsTr("Unknown item type at index: "), _view.currentIndex, synoData);
+                break;
+            }
         }
 
         function cdUp() {

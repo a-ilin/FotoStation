@@ -114,7 +114,7 @@ Window {
                     asynchronous: true
                     height: 16
                     width: 16
-                    source: internal.isAwaitingReply ? Assets.animated.roller_16 : ""
+                    source: internal.isAwaitingReply ? Assets.assetForSize(Assets.animated.roller, 16) : ""
                 }
             }
         }
