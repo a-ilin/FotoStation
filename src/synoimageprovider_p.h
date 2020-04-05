@@ -49,7 +49,8 @@ public:
     // NOTE: SynoImageCache is not thread-safe
     QMutex imageCacheMutex;
     SynoImageCache imageCache;
-    QThread thread;
+    QThread threadWorker;
+    QPointer<QThread> threadRenderer;
 };
 
 class SynoImageResponse : public QQuickImageResponse
@@ -59,7 +60,7 @@ class SynoImageResponse : public QQuickImageResponse
     enum CancelStatus {
         Status_NotCancelled = 0,
         Status_Cancelled,
-        Statuc_CancelledConfirmed
+        Status_CancelledConfirmed
     };
 
 public:
@@ -76,10 +77,10 @@ public:
 
 signals:
     void cacheCheckFinished(bool success);
-    void requestCancelled();
 
 protected:
     void setErrorString(const QString& err);
+    void emitFinished();
     bool loadFromCache();
     void sendRequest();
     void processNetworkRequest();

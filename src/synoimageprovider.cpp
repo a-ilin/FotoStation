@@ -48,8 +48,8 @@ SynoImageProvider::SynoImageProvider(SynoConn* conn)
 
     d->conn = conn;
 
-    d->thread.setObjectName(QStringLiteral("SynoImageProviderThread"));
-    d->thread.start();
+    d->threadWorker.setObjectName(QStringLiteral("SynoImageProviderThread"));
+    d->threadWorker.start();
 
     QTimer* cacheStatisticTimer = new QTimer(this);
     connect(cacheStatisticTimer, &QTimer::timeout, this, [this]() {
@@ -66,8 +66,8 @@ SynoImageProvider::~SynoImageProvider()
 {
     Q_D(SynoImageProvider);
 
-    d->thread.quit();
-    d->thread.wait();
+    d->threadWorker.quit();
+    d->threadWorker.wait();
 }
 
 void SynoImageProvider::invalidateInCache(const QString& id)
@@ -85,8 +85,12 @@ QQuickImageResponse* SynoImageProvider::requestImageResponse(const QString& id,
 {
     Q_D(SynoImageProvider);
 
+    if (!d->threadRenderer) {
+        d->threadRenderer = QThread::currentThread();
+    }
+
     SynoImageResponse* response = new SynoImageResponse(this, id.toLatin1(), requestedSize, options);
-    response->moveToThread(&d->thread);
+    response->moveToThread(&d->threadWorker);
     QTimer::singleShot(0, response, &SynoImageResponse::load);
     return response;
 }
@@ -95,7 +99,8 @@ SynoImageResponse::SynoImageResponse(SynoImageProvider* provider,
                                      const QByteArray& id,
                                      const QSize& size,
                                      const QQuickImageProviderOptions& options)
-    : m_provider(provider)
+    : QQuickImageResponse()
+    , m_provider(provider)
     , m_id(id)
     , m_size(size)
     , m_options(options)
@@ -105,10 +110,11 @@ SynoImageResponse::SynoImageResponse(SynoImageProvider* provider,
 
 void SynoImageResponse::load()
 {
-    // it could be cancelled already
+    Q_ASSERT(QThread::currentThread() == &m_provider->d_func()->threadWorker);
 
+    // it could be cancelled already
     CancelStatus cancel(Status_Cancelled);
-    if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+    if (!m_cancelStatus.compare_exchange_strong(cancel, Status_CancelledConfirmed)) {
         connect(this, &SynoImageResponse::cacheCheckFinished, this, [this](bool success) {
             onCacheCheckFinished(success);
         });
@@ -124,12 +130,14 @@ void SynoImageResponse::load()
             }
         });
     } else {
-        emit finished();
+        emitFinished();
     }
 }
 
 void SynoImageResponse::sendRequest()
 {
+    Q_ASSERT(QThread::currentThread() == &m_provider->d_func()->threadWorker);
+
     QByteArrayList formData;
     formData << QByteArrayLiteral("method=get");
     formData << QByteArrayLiteral("version=1");
@@ -138,17 +146,11 @@ void SynoImageResponse::sendRequest()
 
     Q_ASSERT(!m_req);
     m_req = m_provider->d_func()->conn->createRequest(QByteArrayLiteral("SYNO.PhotoStation.Thumb"), formData);
-
-    connect(this, &SynoImageResponse::requestCancelled, this, [this]() {
-        // it is safe to check here, as this code runs in object's thread
-        if (!m_future.isRunning()) {
-            emit finished();
-        }
-    });
-
     m_req->send(this, [this] {
+        Q_ASSERT(QThread::currentThread() == &m_provider->d_func()->threadWorker);
+
         CancelStatus cancel(Status_Cancelled);
-        if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+        if (!m_cancelStatus.compare_exchange_strong(cancel, Status_CancelledConfirmed)) {
 
             if (!m_req->errorString().isEmpty()) {
                 setErrorString(tr("Network error: %1.").arg(m_req->errorString()));
@@ -165,14 +167,16 @@ void SynoImageResponse::sendRequest()
                     m_future = QtConcurrent::run([this]() {
                         processNetworkRequest();
                         postProcessImage();
-                        emit finished();
+                        QMetaObject::invokeMethod(this, [this]() {
+                            emitFinished();
+                        }, Qt::QueuedConnection);
                     });
                     return;
                 }
             }
         }
 
-        emit finished();
+        emitFinished();
     });
 }
 
@@ -192,7 +196,14 @@ void SynoImageResponse::cancel()
     if (m_cancelStatus.compare_exchange_strong(cancel, Status_Cancelled)) {
         if (m_req) {
             m_req->cancel();
-            emit requestCancelled();
+
+            QMetaObject::invokeMethod(this, [this]() {
+                Q_ASSERT(QThread::currentThread() == &m_provider->d_func()->threadWorker);
+                // it is safe to check here, as this code runs in object's thread
+                if (!m_future.isRunning()) {
+                    emitFinished();
+                }
+            }, Qt::QueuedConnection);
         }
     }
 }
@@ -202,6 +213,19 @@ void SynoImageResponse::setErrorString(const QString& err)
     m_errorString = tr("Unable to obtain image. %1\nId: %2")
                     .arg(err).arg(QString::fromLatin1(m_id));
     qWarning() << __FUNCTION__ << m_errorString;
+}
+
+void SynoImageResponse::emitFinished()
+{
+    // move to another thread is allowed only from own thread
+    Q_ASSERT(QThread::currentThread() == thread());
+
+    // need to move the object to Renderer thread,
+    // as Renderer would schedule object release after the call
+    Q_ASSERT(m_provider->d_func()->threadRenderer);
+    moveToThread(m_provider->d_func()->threadRenderer);
+
+    emit finished();
 }
 
 bool SynoImageResponse::loadFromCache()
@@ -284,14 +308,16 @@ void SynoImageResponse::updateSynoThumbSize()
 
 void SynoImageResponse::onCacheCheckFinished(bool success)
 {
+    Q_ASSERT(QThread::currentThread() == &m_provider->d_func()->threadWorker);
+
     if (success) {
-        emit finished();
+        emitFinished();
     } else {
         CancelStatus cancel(Status_Cancelled);
-        if (!m_cancelStatus.compare_exchange_strong(cancel, Statuc_CancelledConfirmed)) {
+        if (!m_cancelStatus.compare_exchange_strong(cancel, Status_CancelledConfirmed)) {
             sendRequest();
         } else {
-            emit finished();
+            emitFinished();
         }
     }
 }
