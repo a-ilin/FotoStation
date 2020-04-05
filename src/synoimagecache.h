@@ -40,15 +40,21 @@ inline uint qHash(const SynoImageCacheKey& key) {
     return qHash(key.id) ^ qHash(key.synoSize);
 }
 
+struct SynoImageCacheValue
+{
+    QByteArray imageFormat;
+    QByteArray imageData;
+};
+
 class SynoImageCache
 {
-    using CacheType = Cache< SynoImageCacheKey, QImage >;
+    using CacheType = Cache< SynoImageCacheKey, SynoImageCacheValue >;
 
 public:
     SynoImageCache();
 
-    QImage object(const QString& url,  const QByteArray& sizeId);
-    void insert(const QString& url, const QByteArray& sizeId, const QImage& image);
+    SynoImageCacheValue object(const QString& url,  const QByteArray& sizeId);
+    void insert(const QString& url, const QByteArray& sizeId, const SynoImageCacheValue& image);
     void remove(const QString& url, const QByteArray& sizeId);
     void clear();
 

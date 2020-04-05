@@ -30,12 +30,12 @@ SynoImageCache::SynoImageCache()
     m_cache = CacheType(maximumSizeMb, maximumCountItems);
 }
 
-QImage SynoImageCache::object(const QString& url, const QByteArray& sizeId)
+SynoImageCacheValue SynoImageCache::object(const QString& url, const QByteArray& sizeId)
 {
     SynoImageCacheKey key{url, sizeId};
-    QImage value = m_cache.object(key);
+    SynoImageCacheValue value = m_cache.object(key);
 
-    if (!value.isNull()) {
+    if (!value.imageData.isEmpty()) {
         ++m_hitCount;
     } else {
         ++m_missCount;
@@ -44,10 +44,10 @@ QImage SynoImageCache::object(const QString& url, const QByteArray& sizeId)
     return value;
 }
 
-void SynoImageCache::insert(const QString& url, const QByteArray& sizeId, const QImage& image)
+void SynoImageCache::insert(const QString& url, const QByteArray& sizeId, const SynoImageCacheValue& image)
 {
     SynoImageCacheKey key{url, sizeId};
-    m_cache.insert(key, image, image.sizeInBytes());
+    m_cache.insert(key, image, image.imageData.size() + image.imageFormat.size());
 }
 
 void SynoImageCache::remove(const QString& url, const QByteArray& sizeId)

@@ -207,10 +207,17 @@ void SynoImageResponse::setErrorString(const QString& err)
 bool SynoImageResponse::loadFromCache()
 {
     SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
-    QImage image = cacheLocker.cache().object(m_id, m_synoSize);
-    if (!image.isNull()) {
-        m_image = image;
-        return true;
+    SynoImageCacheValue imageCacheVal = cacheLocker.cache().object(m_id, m_synoSize);
+
+    if (!imageCacheVal.imageData.isEmpty()) {
+        QByteArray data(imageCacheVal.imageData);
+        QBuffer buffer(&data);
+        buffer.open(QIODevice::ReadOnly);
+        QImageReader reader(&buffer, imageCacheVal.imageFormat);
+
+        if (reader.read(&m_image) && !m_image.isNull()) {
+            return true;
+        }
     }
 
     return false;
@@ -240,7 +247,7 @@ void SynoImageResponse::processNetworkRequest()
     if (reader.read(&m_image) && !m_image.isNull()) {
         // save to cache
         SynoImageProviderPrivate::CacheLocker cacheLocker(m_provider->d_func());
-        cacheLocker.cache().insert(m_id, m_synoSize, m_image);
+        cacheLocker.cache().insert(m_id, m_synoSize, SynoImageCacheValue{imageFormat, data});
     } else {
         QString readerError = reader.errorString();
         if (!readerError.isEmpty()) {
