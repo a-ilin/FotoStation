@@ -26,7 +26,7 @@ struct SynoAlbumData
 {
     Q_GADGET
 
-    Q_PROPERTY(QByteArray id MEMBER id)
+    Q_PROPERTY(QString id MEMBER id)
     Q_PROPERTY(QString type MEMBER type)
     Q_PROPERTY(QString path MEMBER path)
 
@@ -66,7 +66,7 @@ public:
     static const SynoAlbumData null;
 
 public:
-    QByteArray id;
+    QString id;
     QString name;
     QString path;
     QString sharepath;

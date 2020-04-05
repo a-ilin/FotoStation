@@ -30,6 +30,7 @@ Item {
     property int fillMode: Image.PreserveAspectFit
     property int sourceSizeWidth
     property int sourceSizeHeight
+    property bool showLoadingWhenEmpty: false
 
     readonly property bool isEmpty: _coverImage.status === Image.Null
     readonly property bool isError: _coverImage.status === Image.Error
@@ -77,6 +78,7 @@ Item {
         id: _loadingIndicator
         asynchronous: true
         source: !root.isLoaded && !root.isBackupLoaded && (root.isLoading || root.isBackupLoading)
+                    || (root.showLoadingWhenEmpty && root.isBackupEmpty && root.isEmpty)
                 ? Assets.assetForSize(Assets.animated.roller, Math.min(root.height, root.width)) : ""
         visible: false
     }

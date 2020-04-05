@@ -170,6 +170,7 @@ FocusScope {
                 sourceSizeWidth: width
                 source: Facade.coverThumbUrl(imageId)
                 fillMode: Image.PreserveAspectCrop
+                showLoadingWhenEmpty: true
             }
 
             Rectangle {

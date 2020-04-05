@@ -38,7 +38,7 @@ bool SynoAlbumData::isNull() const
 
 void SynoAlbumData::readFrom(const QJsonObject& albumDataObject)
 {
-    id = albumDataObject[QStringLiteral("id")].toString().toLatin1();
+    id = albumDataObject[QStringLiteral("id")].toString();
     type = albumDataObject[QStringLiteral("type")].toString();
     thumbnail_status = albumDataObject[QStringLiteral("thumbnail_status")].toString().split(',', QString::SkipEmptyParts);
 

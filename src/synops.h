@@ -51,16 +51,6 @@ public:
     static void registerQmlTypes();
 
     /*!
-     * \brief This method converts variant to string
-     *
-     * In case of variant is byte array, it is assumed to be UTF-8 encoded string.
-     * Otherwise standard conversion is used.
-     *
-     * This method is intended to be used from QML.
-     */
-    Q_INVOKABLE static QString toString(const QVariant& value);
-
-    /*!
      * \brief This method parses url fields into variant map
      *
      * This method is intended to be used from QML.

@@ -43,14 +43,14 @@ QtObject {
 
     function coverThumbUrl(thumbId) {
         if (thumbId && thumbId !== "") {
-            return "image://thumb/" + SynoPS.toString(thumbId);
+            return "image://thumb/" + thumbId;
         }
         return "";
     }
 
     function coverFullUrl(thumbId) {
         if (thumbId && thumbId !== "") {
-            return "image://full/" + SynoPS.toString(thumbId);
+            return "image://full/" + thumbId;
         }
         return "";
     }

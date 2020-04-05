@@ -86,21 +86,6 @@ void SynoPS::registerQmlTypes()
     qmlRegisterSingletonType<SynoSizeGadget>(qmlUrl, 1, 0, "SynoSize", SynoSizeGadget::fromQmlEngine);
 }
 
-QString SynoPS::toString(const QVariant& value)
-{
-    if (value.isNull()) {
-        return QString();
-    }
-
-    if (value.type() == QVariant::ByteArray) {
-        // expect it to be utf-8
-        return QString::fromUtf8(value.toByteArray());
-    }
-
-    // use general conversion
-    return value.toString();
-}
-
 QVariantMap SynoPS::urlToMap(const QUrl& value)
 {
     QVariantMap result;

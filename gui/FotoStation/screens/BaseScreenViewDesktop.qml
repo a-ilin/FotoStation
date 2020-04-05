@@ -84,6 +84,7 @@ FocusScope {
                     sourceSizeWidth: width
                     source: Facade.coverThumbUrl(_albumView.selectedImageId)
                     fillMode: Image.PreserveAspectFit
+                    showLoadingWhenEmpty: true
                 }
             }
         }
